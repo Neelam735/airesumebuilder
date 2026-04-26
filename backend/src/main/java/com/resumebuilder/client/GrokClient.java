@@ -10,8 +10,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,17 +35,18 @@ public class GrokClient {
     }
 
     public String chatCompletion(String systemPrompt, String userPrompt) {
-        Map<String, Object> body = Map.of(
-                "model", properties.getModel(),
-                "temperature", 0.4,
-                "response_format", Map.of("type", "json_object"),
-                "messages", List.of(
-                        Map.of("role", "system", "content", systemPrompt),
-                        Map.of("role", "user", "content", userPrompt)
-                )
-        );
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("model", properties.getModel());
+        body.put("temperature", 0.4);
+        body.put("messages", List.of(
+                Map.of("role", "system", "content", systemPrompt),
+                Map.of("role", "user", "content", userPrompt)
+        ));
+        if (properties.isJsonMode()) {
+            body.put("response_format", Map.of("type", "json_object"));
+        }
 
-        log.info("Calling Grok model={}", properties.getModel());
+        log.info("Calling Grok model={} jsonMode={}", properties.getModel(), properties.isJsonMode());
 
         try {
             String raw = webClient.post()
@@ -61,12 +64,28 @@ public class GrokClient {
                 throw new ApiException(HttpStatus.BAD_GATEWAY, "Empty response from AI service");
             }
             return choices.get(0).path("message").path("content").asText();
+        } catch (WebClientResponseException e) {
+            String responseBody = e.getResponseBodyAsString();
+            log.error("Grok API returned {} body={}", e.getStatusCode(), responseBody);
+            throw new ApiException(HttpStatus.BAD_GATEWAY,
+                    "AI service rejected the request: " + extractErrorMessage(responseBody), e);
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
             log.error("Grok API call failed", e);
             throw new ApiException(HttpStatus.BAD_GATEWAY,
                     "AI service is temporarily unavailable. Please try again.", e);
+        }
+    }
+
+    private String extractErrorMessage(String responseBody) {
+        if (responseBody == null || responseBody.isBlank()) return "unknown error";
+        try {
+            JsonNode err = mapper.readTree(responseBody).path("error");
+            String msg = err.isObject() ? err.path("message").asText(null) : err.asText(null);
+            return msg != null && !msg.isBlank() ? msg : responseBody;
+        } catch (Exception ignored) {
+            return responseBody;
         }
     }
 }

@@ -18,7 +18,8 @@ razorpay:
 grok:
   api-key: ${GROK_API_KEY:xai-xxxx}
   base-url: ${GROK_BASE_URL:https://api.x.ai/v1}
-  model: ${GROK_MODEL:grok-2-latest}
+  model: ${GROK_MODEL:grok-3-mini}
+  json-mode: ${GROK_JSON_MODE:false}
   timeout-seconds: 60
 
 cors:

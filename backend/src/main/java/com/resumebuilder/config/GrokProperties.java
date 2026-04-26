@@ -8,6 +8,7 @@ public class GrokProperties {
     private String baseUrl;
     private String model;
     private int timeoutSeconds = 60;
+    private boolean jsonMode = false;
 
     public String getApiKey() { return apiKey; }
     public void setApiKey(String apiKey) { this.apiKey = apiKey; }
@@ -20,4 +21,7 @@ public class GrokProperties {
 
     public int getTimeoutSeconds() { return timeoutSeconds; }
     public void setTimeoutSeconds(int timeoutSeconds) { this.timeoutSeconds = timeoutSeconds; }
+
+    public boolean isJsonMode() { return jsonMode; }
+    public void setJsonMode(boolean jsonMode) { this.jsonMode = jsonMode; }
 }

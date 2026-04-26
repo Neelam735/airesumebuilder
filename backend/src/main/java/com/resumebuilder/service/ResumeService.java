@@ -85,17 +85,36 @@ public class ResumeService {
 
         String userPrompt = USER_PROMPT_TEMPLATE.formatted(text);
         String aiContent = grokClient.chatCompletion(SYSTEM_PROMPT, userPrompt);
+        String cleaned = extractJsonBlock(aiContent);
 
         JsonNode parsed;
         try {
-            parsed = mapper.readTree(aiContent);
+            parsed = mapper.readTree(cleaned);
         } catch (Exception e) {
-            log.error("Failed to parse AI JSON output: {}", aiContent, e);
+            log.error("Failed to parse AI JSON output. raw=<{}> cleaned=<{}>", aiContent, cleaned, e);
             throw new ApiException(HttpStatus.BAD_GATEWAY,
                     "AI returned invalid JSON. Please try again.", e);
         }
 
         paymentService.consumeToken(request.getPaymentToken());
         return new ResumeParseResponse(parsed, "Resume improved successfully");
+    }
+
+    private String extractJsonBlock(String content) {
+        if (content == null) return "";
+        String trimmed = content.trim();
+        if (trimmed.startsWith("```")) {
+            int firstNewline = trimmed.indexOf('\n');
+            if (firstNewline > 0) trimmed = trimmed.substring(firstNewline + 1);
+            int closingFence = trimmed.lastIndexOf("```");
+            if (closingFence >= 0) trimmed = trimmed.substring(0, closingFence);
+            trimmed = trimmed.trim();
+        }
+        int firstBrace = trimmed.indexOf('{');
+        int lastBrace = trimmed.lastIndexOf('}');
+        if (firstBrace >= 0 && lastBrace > firstBrace) {
+            return trimmed.substring(firstBrace, lastBrace + 1);
+        }
+        return trimmed;
     }
 }

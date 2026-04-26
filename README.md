@@ -6,7 +6,7 @@ AI-powered "Import & Improve Resume" flow gated behind a ₹29 Razorpay payment.
 - **Frontend** — Vite + React 18 + TypeScript + Tailwind + Zustand + react-hook-form
 - **Backend** — Java 17 + Spring Boot 3 (REST + WebClient)
 - **Payments** — Razorpay (server-side order creation + HMAC-SHA256 signature verification)
-- **AI** — Grok (xAI) via the OpenAI-compatible Chat Completions endpoint (JSON mode)
+- **AI** — Grok (xAI) via the OpenAI-compatible Chat Completions endpoint
 - **PDF** — `pdfjs-dist` for parsing, `html2pdf.js` for export
 
 No database is required — everything is auto-saved to `localStorage`, and verified
@@ -81,8 +81,9 @@ export RAZORPAY_KEY_SECRET=your_test_secret
 export GROK_API_KEY=xai-xxxxx
 # optional overrides
 export RAZORPAY_AMOUNT=2900            # paise = ₹29.00
-export GROK_MODEL=grok-2-latest        # or grok-3, grok-3-mini, etc.
+export GROK_MODEL=grok-3-mini          # or grok-3, grok-3-fast, grok-2-1212
 export GROK_BASE_URL=https://api.x.ai/v1
+export GROK_JSON_MODE=false            # set true only if your model supports response_format
 
 mvn spring-boot:run
 ```
