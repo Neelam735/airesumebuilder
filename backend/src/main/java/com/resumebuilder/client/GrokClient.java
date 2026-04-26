@@ -2,7 +2,7 @@ package com.resumebuilder.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.resumebuilder.config.OpenAIProperties;
+import com.resumebuilder.config.GrokProperties;
 import com.resumebuilder.exception.ApiException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,15 +16,15 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class OpenAIClient {
+public class GrokClient {
 
-    private static final Logger log = LoggerFactory.getLogger(OpenAIClient.class);
+    private static final Logger log = LoggerFactory.getLogger(GrokClient.class);
 
-    private final OpenAIProperties properties;
+    private final GrokProperties properties;
     private final WebClient webClient;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public OpenAIClient(OpenAIProperties properties) {
+    public GrokClient(GrokProperties properties) {
         this.properties = properties;
         this.webClient = WebClient.builder()
                 .baseUrl(properties.getBaseUrl())
@@ -43,7 +43,7 @@ public class OpenAIClient {
                 )
         );
 
-        log.info("Calling OpenAI model={}", properties.getModel());
+        log.info("Calling Grok model={}", properties.getModel());
 
         try {
             String raw = webClient.post()
@@ -64,7 +64,7 @@ public class OpenAIClient {
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
-            log.error("OpenAI API call failed", e);
+            log.error("Grok API call failed", e);
             throw new ApiException(HttpStatus.BAD_GATEWAY,
                     "AI service is temporarily unavailable. Please try again.", e);
         }

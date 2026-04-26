@@ -6,7 +6,7 @@ AI-powered "Import & Improve Resume" flow gated behind a ₹29 Razorpay payment.
 - **Frontend** — Vite + React 18 + TypeScript + Tailwind + Zustand + react-hook-form
 - **Backend** — Java 17 + Spring Boot 3 (REST + WebClient)
 - **Payments** — Razorpay (server-side order creation + HMAC-SHA256 signature verification)
-- **AI** — OpenAI Chat Completions (JSON mode)
+- **AI** — Grok (xAI) via the OpenAI-compatible Chat Completions endpoint (JSON mode)
 - **PDF** — `pdfjs-dist` for parsing, `html2pdf.js` for export
 
 No database is required — everything is auto-saved to `localStorage`, and verified
@@ -25,7 +25,7 @@ airesumebuilder/
 │       ├── config/                # CORS + @ConfigurationProperties
 │       ├── controller/            # REST endpoints
 │       ├── service/               # PaymentService, ResumeService
-│       ├── client/                # RazorpayClient, OpenAIClient
+│       ├── client/                # RazorpayClient, GrokClient
 │       ├── dto/
 │       └── exception/
 │   └── src/main/resources/application.yml
@@ -69,7 +69,7 @@ airesumebuilder/
 - Java 17+
 - Maven 3.9+
 - Razorpay test account → `KEY_ID` + `KEY_SECRET`
-- OpenAI API key
+- Grok (xAI) API key — get one from https://console.x.ai
 
 ### Run locally
 
@@ -78,10 +78,11 @@ cd backend
 
 export RAZORPAY_KEY_ID=rzp_test_xxxxx
 export RAZORPAY_KEY_SECRET=your_test_secret
-export OPENAI_API_KEY=sk-xxxxx
+export GROK_API_KEY=xai-xxxxx
 # optional overrides
 export RAZORPAY_AMOUNT=2900            # paise = ₹29.00
-export OPENAI_MODEL=gpt-4o-mini
+export GROK_MODEL=grok-2-latest        # or grok-3, grok-3-mini, etc.
+export GROK_BASE_URL=https://api.x.ai/v1
 
 mvn spring-boot:run
 ```
@@ -182,4 +183,7 @@ to the full backend URL at build time.
 - **Accent color & zoom** — handled in `CustomizationPanel.tsx`.
 - **Price** — set `RAZORPAY_AMOUNT` (paise) on the backend. The server overrides any
   client-supplied amount.
-- **AI model / prompt** — edit `OPENAI_MODEL` and `ResumeService.SYSTEM_PROMPT`.
+- **AI model / prompt** — edit `GROK_MODEL` and `ResumeService.SYSTEM_PROMPT`.
+  Because Grok exposes the same OpenAI-compatible Chat Completions schema, swapping
+  back to OpenAI (or to any other compatible provider) only requires changing
+  `GROK_BASE_URL`, `GROK_API_KEY`, and `GROK_MODEL`.

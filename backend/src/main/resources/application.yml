@@ -15,10 +15,10 @@ razorpay:
   amount: ${RAZORPAY_AMOUNT:2900}
   currency: ${RAZORPAY_CURRENCY:INR}
 
-openai:
-  api-key: ${OPENAI_API_KEY:sk-xxxx}
-  base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
-  model: ${OPENAI_MODEL:gpt-4o-mini}
+grok:
+  api-key: ${GROK_API_KEY:xai-xxxx}
+  base-url: ${GROK_BASE_URL:https://api.x.ai/v1}
+  model: ${GROK_MODEL:grok-2-latest}
   timeout-seconds: 60
 
 cors:

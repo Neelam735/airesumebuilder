@@ -2,8 +2,8 @@ package com.resumebuilder.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "openai")
-public class OpenAIProperties {
+@ConfigurationProperties(prefix = "grok")
+public class GrokProperties {
     private String apiKey;
     private String baseUrl;
     private String model;
