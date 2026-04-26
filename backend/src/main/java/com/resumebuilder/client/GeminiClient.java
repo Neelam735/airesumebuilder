@@ -113,8 +113,14 @@ public class GeminiClient {
         } catch (WebClientResponseException e) {
             String responseBody = e.getResponseBodyAsString();
             log.error("Gemini API returned {} body={}", e.getStatusCode(), responseBody);
+            String message = extractErrorMessage(responseBody);
+            if (e.getStatusCode().value() == 404 && message.contains("not found")) {
+                message += " — set GEMINI_MODEL to a current model id "
+                        + "(e.g. gemini-2.5-flash, gemini-2.5-pro, gemini-2.0-flash). "
+                        + "The 1.5 family was deprecated.";
+            }
             throw new ApiException(HttpStatus.BAD_GATEWAY,
-                    "AI service rejected the request: " + extractErrorMessage(responseBody), e);
+                    "AI service rejected the request: " + message, e);
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {

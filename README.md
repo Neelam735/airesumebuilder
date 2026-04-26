@@ -81,7 +81,7 @@ export RAZORPAY_KEY_SECRET=your_test_secret
 export GEMINI_API_KEY=your_gemini_api_key
 # optional overrides
 export RAZORPAY_AMOUNT=2900            # paise = ₹29.00
-export GEMINI_MODEL=gemini-2.5-flash   # or gemini-2.5-pro, gemini-2.0-flash, gemini-1.5-flash
+export GEMINI_MODEL=gemini-2.5-flash   # or gemini-2.5-pro, gemini-2.0-flash. (1.5 family is deprecated.)
 export GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta
 export GEMINI_JSON_MODE=true
 
