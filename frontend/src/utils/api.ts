@@ -35,6 +35,27 @@ async function postJSON<T>(path: string, body?: unknown): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+export interface JobMatchItem {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  jobType: string;
+  salary: string;
+  url: string;
+  publishedAt: string;
+  tags: string[];
+  matchedSkills: string[];
+  score: number;
+  snippet: string;
+}
+
+export interface JobMatchResponse {
+  matches: JobMatchItem[];
+  totalScanned: number;
+  source: string;
+}
+
 export const api = {
   createOrder: () => postJSON<CreateOrderResponse>('/payment/create-order', {}),
 
@@ -49,4 +70,21 @@ export const api = {
       paymentToken,
       resumeText,
     }),
+
+  matchJobs: (payload: {
+    skills: string[];
+    title?: string;
+    location?: string;
+    limit?: number;
+  }) => postJSON<JobMatchResponse>('/jobs/match', payload),
+
+  draftCoverLetter: (payload: {
+    name: string;
+    title: string;
+    summary: string;
+    skills: string[];
+    jobTitle: string;
+    company: string;
+    jobDescription: string;
+  }) => postJSON<{ coverLetter: string }>('/jobs/cover-letter', payload),
 };

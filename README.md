@@ -103,6 +103,8 @@ curl http://localhost:8080/api/v1/health
 | `POST` | `/api/v1/payment/create-order`    | Creates a Razorpay order (₹29 default)   |
 | `POST` | `/api/v1/payment/verify`          | Verifies signature, returns payment token|
 | `POST` | `/api/v1/resume/parse`            | AI-improves resume; requires token       |
+| `POST` | `/api/v1/jobs/match`              | Ranks remote jobs by resume skills       |
+| `POST` | `/api/v1/jobs/cover-letter`       | Drafts a tailored cover letter via AI    |
 | `GET`  | `/api/v1/health`                  | Liveness                                 |
 
 `POST /api/v1/payment/verify` body:
@@ -128,6 +130,29 @@ Response:
 ```
 
 A `402 Payment Required` is returned if the token is missing/expired/invalid.
+
+### Job matching & "Apply with AI"
+
+`POST /api/v1/jobs/match` body:
+
+```json
+{ "skills": ["typescript","aws","spring boot"], "title": "Senior Engineer", "location": "remote", "limit": 12 }
+```
+
+Jobs are sourced from [Remotive's public API](https://remotive.com/api-documentation)
+(no auth required, free) and ranked by skill overlap with weighted scoring:
+`tag match × 3 + title match × 2 + description match × 1`, normalised to 0–100.
+
+`POST /api/v1/jobs/cover-letter` produces a 200-word, three-paragraph cover letter
+via Gemini using the candidate's name/title/summary/skills and the target
+job's title/company/description. This endpoint is **not** payment-gated —
+the ₹29 fee covers the AI resume rewrite only.
+
+> ⚠️ **Important:** "Apply with AI" is a smart-assist flow, not a bot. Truly
+> hands-off applying on LinkedIn / Indeed violates platform ToS. The frontend
+> uses these endpoints to (1) match jobs, (2) draft a cover letter, and
+> (3) download the resume PDF + open the listing in a new tab so the user can
+> finalise the application themselves.
 
 ---
 

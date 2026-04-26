@@ -9,6 +9,7 @@ import LanguagesForm from '../components/LanguagesForm';
 import ResumePreview from '../components/ResumePreview';
 import CustomizationPanel from '../components/CustomizationPanel';
 import ImproveModal from '../components/ImproveModal';
+import JobMatches from '../components/JobMatches';
 import { useResumeStore } from '../store/resumeStore';
 import { exportElementAsPdf } from '../utils/pdfExport';
 
@@ -70,8 +71,9 @@ export default function BuilderPage() {
             </div>
           </section>
 
-          <aside className="col-span-12 lg:col-span-3 max-h-[calc(100vh-5rem)] overflow-y-auto pr-1 scroll-area">
+          <aside className="col-span-12 lg:col-span-3 max-h-[calc(100vh-5rem)] overflow-y-auto pr-1 scroll-area space-y-3">
             <CustomizationPanel />
+            <JobMatches />
           </aside>
         </div>
       </main>
