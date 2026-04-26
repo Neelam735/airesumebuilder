@@ -1,0 +1,30 @@
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: resume-builder-backend
+  jackson:
+    default-property-inclusion: non_null
+
+razorpay:
+  key-id: ${RAZORPAY_KEY_ID:rzp_test_xxxxxxxxxxxx}
+  key-secret: ${RAZORPAY_KEY_SECRET:your_test_secret}
+  amount: ${RAZORPAY_AMOUNT:2900}
+  currency: ${RAZORPAY_CURRENCY:INR}
+
+openai:
+  api-key: ${OPENAI_API_KEY:sk-xxxx}
+  base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+  model: ${OPENAI_MODEL:gpt-4o-mini}
+  timeout-seconds: 60
+
+cors:
+  allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
+
+logging:
+  level:
+    root: INFO
+    com.resumebuilder: DEBUG
