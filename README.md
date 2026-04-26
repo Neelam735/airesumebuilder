@@ -6,7 +6,7 @@ AI-powered "Import & Improve Resume" flow gated behind a ₹29 Razorpay payment.
 - **Frontend** — Vite + React 18 + TypeScript + Tailwind + Zustand + react-hook-form
 - **Backend** — Java 17 + Spring Boot 3 (REST + WebClient)
 - **Payments** — Razorpay (server-side order creation + HMAC-SHA256 signature verification)
-- **AI** — Grok (xAI) via the OpenAI-compatible Chat Completions endpoint
+- **AI** — Google Gemini (`generateContent`) with JSON response mode
 - **PDF** — `pdfjs-dist` for parsing, `html2pdf.js` for export
 
 No database is required — everything is auto-saved to `localStorage`, and verified
@@ -25,7 +25,7 @@ airesumebuilder/
 │       ├── config/                # CORS + @ConfigurationProperties
 │       ├── controller/            # REST endpoints
 │       ├── service/               # PaymentService, ResumeService
-│       ├── client/                # RazorpayClient, GrokClient
+│       ├── client/                # RazorpayClient, GeminiClient
 │       ├── dto/
 │       └── exception/
 │   └── src/main/resources/application.yml
@@ -69,7 +69,7 @@ airesumebuilder/
 - Java 17+
 - Maven 3.9+
 - Razorpay test account → `KEY_ID` + `KEY_SECRET`
-- Grok (xAI) API key — get one from https://console.x.ai
+- Google Gemini API key — get one from https://aistudio.google.com/apikey
 
 ### Run locally
 
@@ -78,12 +78,12 @@ cd backend
 
 export RAZORPAY_KEY_ID=rzp_test_xxxxx
 export RAZORPAY_KEY_SECRET=your_test_secret
-export GROK_API_KEY=xai-xxxxx
+export GEMINI_API_KEY=your_gemini_api_key
 # optional overrides
 export RAZORPAY_AMOUNT=2900            # paise = ₹29.00
-export GROK_MODEL=grok-3-mini          # or grok-3, grok-3-fast, grok-2-1212
-export GROK_BASE_URL=https://api.x.ai/v1
-export GROK_JSON_MODE=false            # set true only if your model supports response_format
+export GEMINI_MODEL=gemini-2.5-flash   # or gemini-2.5-pro, gemini-2.0-flash, gemini-1.5-flash
+export GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta
+export GEMINI_JSON_MODE=true
 
 mvn spring-boot:run
 ```
@@ -184,7 +184,6 @@ to the full backend URL at build time.
 - **Accent color & zoom** — handled in `CustomizationPanel.tsx`.
 - **Price** — set `RAZORPAY_AMOUNT` (paise) on the backend. The server overrides any
   client-supplied amount.
-- **AI model / prompt** — edit `GROK_MODEL` and `ResumeService.SYSTEM_PROMPT`.
-  Because Grok exposes the same OpenAI-compatible Chat Completions schema, swapping
-  back to OpenAI (or to any other compatible provider) only requires changing
-  `GROK_BASE_URL`, `GROK_API_KEY`, and `GROK_MODEL`.
+- **AI model / prompt** — edit `GEMINI_MODEL` and `ResumeService.SYSTEM_PROMPT`.
+  `gemini-2.5-flash` is the cheapest fast model; switch to `gemini-2.5-pro`
+  for higher-quality output at higher latency and cost.

@@ -2,13 +2,13 @@ package com.resumebuilder.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "grok")
-public class GrokProperties {
+@ConfigurationProperties(prefix = "gemini")
+public class GeminiProperties {
     private String apiKey;
     private String baseUrl;
     private String model;
     private int timeoutSeconds = 60;
-    private boolean jsonMode = false;
+    private boolean jsonMode = true;
 
     public String getApiKey() { return apiKey; }
     public void setApiKey(String apiKey) { this.apiKey = apiKey; }

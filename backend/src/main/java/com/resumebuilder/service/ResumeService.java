@@ -2,7 +2,7 @@ package com.resumebuilder.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.resumebuilder.client.GrokClient;
+import com.resumebuilder.client.GeminiClient;
 import com.resumebuilder.dto.ResumeParseRequest;
 import com.resumebuilder.dto.ResumeParseResponse;
 import com.resumebuilder.exception.ApiException;
@@ -59,12 +59,12 @@ public class ResumeService {
             \"\"\"
             """;
 
-    private final GrokClient grokClient;
+    private final GeminiClient geminiClient;
     private final PaymentService paymentService;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public ResumeService(GrokClient grokClient, PaymentService paymentService) {
-        this.grokClient = grokClient;
+    public ResumeService(GeminiClient geminiClient, PaymentService paymentService) {
+        this.geminiClient = geminiClient;
         this.paymentService = paymentService;
     }
 
@@ -84,7 +84,7 @@ public class ResumeService {
         }
 
         String userPrompt = USER_PROMPT_TEMPLATE.formatted(text);
-        String aiContent = grokClient.chatCompletion(SYSTEM_PROMPT, userPrompt);
+        String aiContent = geminiClient.generateContent(SYSTEM_PROMPT, userPrompt);
         String cleaned = extractJsonBlock(aiContent);
 
         JsonNode parsed;

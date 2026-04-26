@@ -15,11 +15,11 @@ razorpay:
   amount: ${RAZORPAY_AMOUNT:2900}
   currency: ${RAZORPAY_CURRENCY:INR}
 
-grok:
-  api-key: ${GROK_API_KEY:xai-xxxx}
-  base-url: ${GROK_BASE_URL:https://api.x.ai/v1}
-  model: ${GROK_MODEL:grok-3-mini}
-  json-mode: ${GROK_JSON_MODE:false}
+gemini:
+  api-key: ${GEMINI_API_KEY:your_gemini_api_key}
+  base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}
+  model: ${GEMINI_MODEL:gemini-2.5-flash}
+  json-mode: ${GEMINI_JSON_MODE:true}
   timeout-seconds: 60
 
 cors:
