@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.resumebuilder.config.GeminiProperties;
 import com.resumebuilder.exception.ApiException;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,17 +23,35 @@ import java.util.Map;
 public class GeminiClient {
 
     private static final Logger log = LoggerFactory.getLogger(GeminiClient.class);
+    private static final String DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 
     private final GeminiProperties properties;
     private final WebClient webClient;
     private final ObjectMapper mapper = new ObjectMapper();
+    private final String resolvedBaseUrl;
 
     public GeminiClient(GeminiProperties properties) {
         this.properties = properties;
+        this.resolvedBaseUrl = resolveBaseUrl(properties.getBaseUrl());
         this.webClient = WebClient.builder()
-                .baseUrl(properties.getBaseUrl())
-                .defaultHeader("x-goog-api-key", properties.getApiKey())
+                .defaultHeader("x-goog-api-key", properties.getApiKey() == null ? "" : properties.getApiKey())
                 .build();
+    }
+
+    @PostConstruct
+    void validateConfig() {
+        log.info("Gemini config: baseUrl={} model={} jsonMode={}",
+                resolvedBaseUrl, properties.getModel(), properties.isJsonMode());
+
+        if (properties.getModel() == null || properties.getModel().isBlank()) {
+            throw new IllegalStateException(
+                    "gemini.model is not configured. Set GEMINI_MODEL (e.g. gemini-2.5-flash).");
+        }
+        String key = properties.getApiKey();
+        if (key == null || key.isBlank() || "your_gemini_api_key".equals(key)) {
+            log.warn("GEMINI_API_KEY is not set or is using the placeholder value. "
+                    + "Get a key at https://aistudio.google.com/apikey and export GEMINI_API_KEY=...");
+        }
     }
 
     public String generateContent(String systemPrompt, String userPrompt) {
@@ -51,8 +71,8 @@ public class GeminiClient {
         ));
         body.put("generationConfig", generationConfig);
 
-        String uri = "/models/" + properties.getModel() + ":generateContent";
-        log.info("Calling Gemini model={} jsonMode={}", properties.getModel(), properties.isJsonMode());
+        URI uri = URI.create(resolvedBaseUrl + "/models/" + properties.getModel() + ":generateContent");
+        log.info("Calling Gemini POST {}", uri);
 
         try {
             String raw = webClient.post()
@@ -102,6 +122,23 @@ public class GeminiClient {
             throw new ApiException(HttpStatus.BAD_GATEWAY,
                     "AI service is temporarily unavailable. Please try again.", e);
         }
+    }
+
+    private static String resolveBaseUrl(String configured) {
+        String value = configured == null ? "" : configured.trim();
+        if (value.isEmpty()) {
+            log.warn("gemini.base-url is empty; falling back to default {}", DEFAULT_BASE_URL);
+            return DEFAULT_BASE_URL;
+        }
+        if (!value.startsWith("http://") && !value.startsWith("https://")) {
+            log.warn("gemini.base-url '{}' is missing http(s) scheme; falling back to default {}",
+                    value, DEFAULT_BASE_URL);
+            return DEFAULT_BASE_URL;
+        }
+        while (value.endsWith("/")) {
+            value = value.substring(0, value.length() - 1);
+        }
+        return value;
     }
 
     private String extractErrorMessage(String responseBody) {
