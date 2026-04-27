@@ -1,39 +1,37 @@
 # BuildifyAi ⚡
 
-> **Build Smarter. Launch Faster.**
+> **Building Powerful Mobile Apps & Websites That Drive Growth.**
 >
-> Got an idea? We help you bring it to life. Using AI, we make building apps and websites simple, fast, and stress-free.
-
-A complete, modern, responsive startup website with two interchangeable backend options.
+> A modern, professional, responsive marketing site for a tech studio that ships mobile apps, websites, UI/UX, and ongoing maintenance.
 
 ---
 
 ## ✨ What's inside
 
-- **Frontend** – Hand-crafted HTML, CSS, and vanilla JS (no frameworks). Fully responsive, SEO-friendly, lightning fast.
+- **Frontend** – Hand-crafted HTML, CSS, and vanilla JS (no frameworks). Tech-focused **blue + purple** palette, gradient accents, soft shadows, scroll-in animations, fully responsive.
 - **Backend (choose one)**
-  - **Node.js + Express** (`backend-node/`) – simple and quick.
-  - **Java Spring Boot** (`backend-java/`) – enterprise-ready alternative.
-- **Pages** – Landing (Hero / Features / Pricing / About / CTA), Contact, Login, Signup.
-- **Contact API** – validates and stores submissions.
-- **Auth UI stubs** – validated forms wired to API stubs (ready to plug into real auth).
-- **Google Analytics** + **Google Ads placeholder** baked in.
+  - **Node.js + Express** (`backend-node/`) – simple and fast.
+  - **Java Spring Boot** (`backend-java/`) – enterprise alternative.
+- **5 pages** – Home, Services, Portfolio, About, Contact.
+- **Contact API** – validates and stores project enquiries (name, email, company, service, message).
+- **Google Analytics** + **integration-ready** structure (chat widgets, pixels, etc.).
 
 ---
 
 ## 🎨 Color palette
 
-| Token         | Hex       | Usage                       |
-| ------------- | --------- | --------------------------- |
-| Primary       | `#6366F1` | Indigo - buttons, accents   |
-| Primary Dark  | `#4F46E5` | Hover states                |
-| Accent        | `#06B6D4` | Cyan - gradients, highlights|
-| Dark          | `#0F172A` | Headings, footer background |
-| Text          | `#1E293B` | Body copy                   |
-| Muted         | `#64748B` | Secondary text              |
-| Background    | `#F8FAFC` | Page background             |
-| Success       | `#10B981` | Status messages             |
-| Danger        | `#EF4444` | Errors                      |
+| Token         | Hex       | Usage                             |
+| ------------- | --------- | --------------------------------- |
+| Primary       | `#2563EB` | Blue – buttons, links, accents    |
+| Primary Dark  | `#1D4ED8` | Hover states                      |
+| Accent        | `#8B5CF6` | Violet – gradient pair            |
+| Dark          | `#0B1120` | Footer, headings, dark sections   |
+| Text          | `#1E293B` | Body copy                         |
+| Muted         | `#64748B` | Secondary text                    |
+| Soft          | `#F8FAFC` | Alternating section background    |
+| Background    | `#FFFFFF` | Page background                   |
+
+Signature gradient: `linear-gradient(135deg, #2563EB, #8B5CF6)`
 
 Font: **Inter** (Google Fonts).
 
@@ -44,15 +42,14 @@ Font: **Inter** (Google Fonts).
 ```
 airesumebuilder/
 ├── frontend/
-│   ├── index.html          # Landing (Hero + Features + Pricing + About + CTA)
+│   ├── index.html          # Home (hero, services overview, process, testimonials, CTA)
+│   ├── services.html       # Services + benefits
+│   ├── portfolio.html      # 9 sample projects
+│   ├── about.html          # Mission, vision, team, stats
 │   ├── contact.html        # Contact form (calls /api/contact)
-│   ├── login.html          # Login UI
-│   ├── signup.html         # Signup UI
-│   ├── css/
-│   │   └── styles.css
-│   ├── js/
-│   │   └── main.js
-│   └── assets/
+│   ├── css/styles.css
+│   ├── js/main.js          # shared nav/footer + form + scroll reveal
+│   └── assets/             # screenshots
 │
 ├── backend-node/           # Option A: Node + Express
 │   ├── server.js
@@ -60,21 +57,11 @@ airesumebuilder/
 │   ├── .env.example
 │   └── routes/
 │       ├── contact.js
-│       └── auth.js
+│       └── auth.js         # (kept as a stub - safe to ignore for the agency site)
 │
 ├── backend-java/           # Option B: Spring Boot
 │   ├── pom.xml
-│   └── src/main/
-│       ├── java/com/buildifyai/api/
-│       │   ├── BuildifyAiApplication.java
-│       │   ├── config/CorsConfig.java
-│       │   ├── controller/
-│       │   │   ├── ContactController.java
-│       │   │   ├── AuthController.java
-│       │   │   └── HealthController.java
-│       │   ├── model/ContactMessage.java
-│       │   └── service/ContactService.java
-│       └── resources/application.properties
+│   └── src/main/java/com/buildifyai/api/...
 │
 └── README.md
 ```
@@ -83,13 +70,10 @@ airesumebuilder/
 
 ## 🚀 Quick start (local)
 
-### 1. Frontend
-
-The frontend is static — no build step.
+### 1. Frontend (static)
 
 ```bash
 cd frontend
-# any static server works:
 python3 -m http.server 3000
 # or
 npx serve -l 3000 .
@@ -97,7 +81,7 @@ npx serve -l 3000 .
 
 Open <http://localhost:3000>.
 
-By default it talks to `http://localhost:5000`. To override, set in the browser console **before loading the page** or in an inline tag in HTML:
+By default the frontend talks to `http://localhost:5000`. Override per page by adding before `js/main.js`:
 
 ```html
 <script>window.API_BASE = 'https://your-api.com';</script>
@@ -107,25 +91,18 @@ By default it talks to `http://localhost:5000`. To override, set in the browser 
 
 ```bash
 cd backend-node
-cp .env.example .env       # edit if needed
+cp .env.example .env
 npm install
-npm run dev                # nodemon, hot reload
-# or
-npm start
+npm start              # or: npm run dev (nodemon)
 ```
 
 API runs on <http://localhost:5000>.
 
-Endpoints:
-
-| Method | Path              | Body                              | Notes                  |
-| ------ | ----------------- | --------------------------------- | ---------------------- |
-| GET    | `/`               | -                                 | service info           |
-| GET    | `/health`         | -                                 | health check           |
-| POST   | `/api/contact`    | `{ name, email, message }`        | stores to `data/contacts.json` |
-| GET    | `/api/contact`    | -                                 | list all (admin) |
-| POST   | `/api/auth/signup`| `{ name, email, password }`       | stub — returns demo token |
-| POST   | `/api/auth/login` | `{ email, password }`             | stub — returns demo token |
+| Method | Path           | Body                                                 |
+| ------ | -------------- | ---------------------------------------------------- |
+| POST   | `/api/contact` | `{ name, email, company?, service?, message }`       |
+| GET    | `/api/contact` | list submissions                                     |
+| GET    | `/health`      | health check                                         |
 
 ### 3. Backend — Option B (Java Spring Boot)
 
@@ -136,7 +113,7 @@ cd backend-java
 mvn spring-boot:run
 ```
 
-Same endpoints as the Node version, on <http://localhost:5000>.
+Same endpoints on <http://localhost:5000>.
 
 ---
 
@@ -145,10 +122,8 @@ Same endpoints as the Node version, on <http://localhost:5000>.
 ```bash
 curl -X POST http://localhost:5000/api/contact \
   -H "Content-Type: application/json" \
-  -d '{"name":"Jane","email":"jane@test.com","message":"Hello BuildifyAi!"}'
+  -d '{"name":"Jane","email":"jane@acme.com","company":"Acme","service":"mobile","message":"We need an iOS MVP in 8 weeks."}'
 ```
-
-Then submit the form on `contact.html`.
 
 ---
 
@@ -156,85 +131,52 @@ Then submit the form on `contact.html`.
 
 ### Frontend → Netlify
 
-1. Push this repo to GitHub.
-2. Sign in to <https://app.netlify.com> → **Add new site → Import existing project**.
-3. Pick the repo, set:
-   - **Base directory:** `frontend`
-   - **Build command:** *(leave empty)*
-   - **Publish directory:** `frontend`
-4. Deploy. Netlify gives you a `*.netlify.app` URL.
-5. **Custom domain:** Site settings → Domain management → Add custom domain → follow the DNS instructions (CNAME or Netlify nameservers).
+1. Push to GitHub → <https://app.netlify.com> → **Add new site → Import existing project**.
+2. **Base directory:** `frontend` · **Build command:** *(empty)* · **Publish directory:** `frontend`.
+3. Deploy. Add a custom domain in **Site settings → Domain management**.
 
 ### Frontend → Vercel
 
-1. Sign in to <https://vercel.com> → **New Project** → import your repo.
-2. **Root directory:** `frontend`. Framework preset: **Other**.
-3. Deploy. You get a `*.vercel.app` URL.
-4. **Custom domain:** Project → Settings → Domains → Add → follow DNS instructions.
+1. <https://vercel.com> → **New Project** → import the repo.
+2. **Root directory:** `frontend`. Framework preset: **Other**. Deploy.
+3. Add a custom domain in **Project → Settings → Domains**.
 
-> Before deploying, edit `frontend/js/main.js` and set `API_BASE` to your deployed backend URL, **or** add a small inline script in each HTML page:
-> `<script>window.API_BASE = 'https://your-api.onrender.com';</script>`
+> Before deploying, set `window.API_BASE` to your deployed backend URL.
 
-### Backend → Render (Node)
+### Backend → Render
 
-1. Push this repo to GitHub.
-2. <https://render.com> → **New → Web Service** → connect repo.
-3. Settings:
-   - **Root Directory:** `backend-node`
-   - **Build Command:** `npm install`
-   - **Start Command:** `npm start`
-   - **Environment:** Node
-   - Add env var `CORS_ORIGIN=https://your-frontend.netlify.app`
-4. Deploy. Copy the URL into the frontend `API_BASE`.
-
-### Backend → Render (Java)
-
-1. **New → Web Service** → connect repo.
-2. Settings:
-   - **Root Directory:** `backend-java`
-   - **Build Command:** `mvn -DskipTests package`
-   - **Start Command:** `java -jar target/buildifyai-api-1.0.0.jar`
-   - Env var `CORS_ORIGIN=https://your-frontend.netlify.app`
+1. <https://render.com> → **New → Web Service** → connect repo.
+2. For Node: **Root** `backend-node` · **Build** `npm install` · **Start** `npm start`.
+3. For Java: **Root** `backend-java` · **Build** `mvn -DskipTests package` · **Start** `java -jar target/buildifyai-api-1.0.0.jar`.
+4. Env var: `CORS_ORIGIN=https://your-frontend.netlify.app`.
 
 ### Backend → Railway
 
-1. <https://railway.app> → **New Project → Deploy from GitHub**.
-2. Pick `backend-node` (or `backend-java`) as the service root.
-3. Railway auto-detects Node / Maven. Set env vars in the **Variables** tab.
-4. Public URL is generated — paste it into the frontend.
+1. <https://railway.app> → **New Project → Deploy from GitHub** → pick the backend folder.
+2. Set env vars in **Variables**. Public URL is generated — paste into the frontend.
 
-### Connecting your custom domain
+### Custom domain
 
-1. **Buy** a domain (Namecheap, Google Domains, Cloudflare, etc.).
-2. **Frontend (Netlify/Vercel):** add the domain in dashboard → Netlify/Vercel shows the DNS records you need.
-3. **At your registrar:** add the records (usually one `A` to the platform's IP and one `CNAME www`).
-4. Wait for DNS to propagate (a few minutes to a few hours). HTTPS is automatic.
-5. **Backend:** in Render/Railway, go to **Settings → Custom Domains** and follow the same flow with `api.yourdomain.com`. Update `CORS_ORIGIN` and the frontend `API_BASE` to match.
+1. Buy a domain (Namecheap, Cloudflare, Google Domains, etc.).
+2. **Frontend:** add the domain in Netlify/Vercel → set the displayed DNS records at your registrar.
+3. **Backend:** in Render/Railway, **Settings → Custom Domains** → use a subdomain like `api.yourdomain.com`. Update `CORS_ORIGIN` and `window.API_BASE`.
+4. HTTPS is automatic on all three platforms.
 
 ---
 
-## 📊 Google Analytics
+## 📊 Integrations
 
-Open every HTML page and replace **both** instances of `G-XXXXXXXXXX` in the `<head>` with your real GA4 measurement ID (from <https://analytics.google.com>).
-
-## 📢 Google Ads
-
-A placeholder ad slot is already on the landing page (`<div class="ad-slot">`).
-
-To activate **AdSense**:
-
-1. Sign up at <https://www.google.com/adsense>.
-2. Add the AdSense site verification snippet to the `<head>` of `index.html`.
-3. Replace the placeholder block with the real `<ins class="adsbygoogle">` tag and load `adsbygoogle.js`.
+- **Google Analytics** — replace `G-XXXXXXXXXX` in every HTML page's `<head>`.
+- **Live chat** (Intercom / Crisp / Tawk.to) — paste the snippet right before `</body>` in each HTML file.
+- **Conversion pixels / Google Ads** — add to the `<head>` of `index.html` and `contact.html`.
 
 ---
 
-## 🔐 Notes & next steps
+## 🔐 Notes
 
-- The contact endpoint stores data **in-memory / JSON file** — fine for a starter, swap for Postgres / Mongo for production.
-- Auth endpoints are **UI-only stubs** that validate input and return a demo token. Wire them to JWT + a hashed-password store before launch.
-- All forms have client-side validation; the backends also validate independently.
-- Rate limiting is enabled on the Node API (60 req / 15 min per IP).
+- Contact submissions are stored in `backend-node/data/contacts.json` (Node) or in-memory (Java) — swap for Postgres / Mongo before launch.
+- Rate limiting on the Node API: 60 req / 15 min per IP.
+- All forms validate on the client *and* on the server.
 
 ---
 

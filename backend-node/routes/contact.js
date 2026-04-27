@@ -14,7 +14,7 @@ const ensureStore = () => {
 const isEmail = (v) => typeof v === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
 router.post('/', (req, res) => {
-    const { name, email, message } = req.body || {};
+    const { name, email, company, service, message } = req.body || {};
 
     if (!name || typeof name !== 'string' || name.trim().length < 2) {
         return res.status(400).json({ error: 'Name is required (min 2 chars)' });
@@ -23,13 +23,15 @@ router.post('/', (req, res) => {
         return res.status(400).json({ error: 'Valid email is required' });
     }
     if (!message || typeof message !== 'string' || message.trim().length < 10) {
-        return res.status(400).json({ error: 'Message is required (min 10 chars)' });
+        return res.status(400).json({ error: 'Project details are required (min 10 chars)' });
     }
 
     const entry = {
         id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
         name: name.trim(),
         email: email.trim().toLowerCase(),
+        company: typeof company === 'string' ? company.trim() : '',
+        service: typeof service === 'string' ? service.trim() : '',
         message: message.trim(),
         createdAt: new Date().toISOString()
     };

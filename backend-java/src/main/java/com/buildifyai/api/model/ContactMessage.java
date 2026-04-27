@@ -18,6 +18,12 @@ public class ContactMessage {
     @Email
     private String email;
 
+    @Size(max = 100)
+    private String company;
+
+    @Size(max = 50)
+    private String service;
+
     @NotBlank
     @Size(min = 10, max = 2000)
     private String message;
@@ -34,6 +40,12 @@ public class ContactMessage {
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+
+    public String getCompany() { return company; }
+    public void setCompany(String company) { this.company = company; }
+
+    public String getService() { return service; }
+    public void setService(String service) { this.service = service; }
 
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Get in touch with the BuildifyAi team. We'll help you bring your idea online." />
-    <meta name="theme-color" content="#6366F1" />
+    <meta name="description" content="Tell us about your project. We'll respond within 24 hours." />
+    <meta name="theme-color" content="#2563EB" />
     <title>Contact - BuildifyAi</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -12,64 +12,97 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="css/styles.css" />
 </head>
-<body>
-    <header class="navbar">
-        <div class="container nav-container">
-            <a href="index.html" class="logo">
-                <span class="logo-mark">⚡</span>
-                <span>BuildifyAi</span>
-            </a>
-            <nav class="nav-links" id="navLinks">
-                <a href="index.html#features">Features</a>
-                <a href="index.html#pricing">Pricing</a>
-                <a href="index.html#about">About</a>
-                <a href="contact.html">Contact</a>
-                <a href="login.html" class="btn btn-ghost">Login</a>
-                <a href="signup.html" class="btn btn-primary">Sign Up</a>
-            </nav>
-            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
-                <span></span><span></span><span></span>
-            </button>
-        </div>
-    </header>
+<body data-page="contact">
+    <div id="site-nav"></div>
 
     <main class="contact-page">
-        <div class="form-card wide">
-            <h1>Get in touch</h1>
-            <p class="sub">Have a question or want a demo? Send us a message and we'll respond within 24 hours.</p>
+        <div class="contact-grid">
+            <div class="contact-info reveal">
+                <span class="eyebrow">Contact</span>
+                <h1>Let's build your <span class="gradient-text">idea</span>.</h1>
+                <p>Tell us a bit about your project. We'll get back within 24 hours with next steps and an honest opinion on scope.</p>
 
-            <form id="contactForm" novalidate>
-                <div class="form-status"></div>
-
-                <div class="form-group">
-                    <label for="name">Full name</label>
-                    <input type="text" id="name" name="name" placeholder="Jane Doe" autocomplete="name" required />
-                    <small class="error-text" id="err-name"></small>
+                <div class="info-card">
+                    <div class="ico">📧</div>
+                    <div>
+                        <strong>Email</strong>
+                        <span>hello@buildifyai.com</span>
+                    </div>
                 </div>
-
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" placeholder="jane@example.com" autocomplete="email" required />
-                    <small class="error-text" id="err-email"></small>
+                <div class="info-card">
+                    <div class="ico">📞</div>
+                    <div>
+                        <strong>Phone</strong>
+                        <span>+1 (000) 000-0000</span>
+                    </div>
                 </div>
-
-                <div class="form-group">
-                    <label for="message">Message</label>
-                    <textarea id="message" name="message" placeholder="Tell us about your project…" required></textarea>
-                    <small class="error-text" id="err-message"></small>
+                <div class="info-card">
+                    <div class="ico">📍</div>
+                    <div>
+                        <strong>Office</strong>
+                        <span>Remote-first · serving clients globally</span>
+                    </div>
                 </div>
+                <div class="info-card">
+                    <div class="ico">⏱️</div>
+                    <div>
+                        <strong>Response time</strong>
+                        <span>Usually within 24 hours, Mon–Fri</span>
+                    </div>
+                </div>
+            </div>
 
-                <button type="submit" class="btn btn-primary btn-block btn-lg">Send Message</button>
-            </form>
+            <div class="form-card reveal">
+                <h2>Start your project</h2>
+                <p class="sub">Free 30-minute consultation — no pressure, no spam.</p>
+
+                <form id="contactForm" novalidate>
+                    <div class="form-status"></div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="name">Full name</label>
+                            <input type="text" id="name" name="name" placeholder="Jane Doe" autocomplete="name" required />
+                            <small class="error-text" id="err-name"></small>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Work email</label>
+                            <input type="email" id="email" name="email" placeholder="jane@company.com" autocomplete="email" required />
+                            <small class="error-text" id="err-email"></small>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="company">Company (optional)</label>
+                            <input type="text" id="company" name="company" placeholder="Acme Inc." />
+                        </div>
+                        <div class="form-group">
+                            <label for="service">What do you need?</label>
+                            <select id="service" name="service">
+                                <option value="">Choose a service…</option>
+                                <option value="mobile">Mobile App Development</option>
+                                <option value="web">Website Development</option>
+                                <option value="design">UI / UX Design</option>
+                                <option value="support">Maintenance &amp; Support</option>
+                                <option value="other">Something else</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="message">Project details</label>
+                        <textarea id="message" name="message" placeholder="What are you building? Timeline? Budget range?" required></textarea>
+                        <small class="error-text" id="err-message"></small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block btn-lg">Let's Build Your Idea</button>
+                </form>
+            </div>
         </div>
     </main>
 
-    <footer class="footer">
-        <div class="container footer-bottom" style="border:none;text-align:center;">
-            <small>© <span id="year"></span> BuildifyAi. All rights reserved.</small>
-        </div>
-    </footer>
-
+    <div id="site-footer"></div>
     <script src="js/main.js"></script>
 </body>
 </html>
