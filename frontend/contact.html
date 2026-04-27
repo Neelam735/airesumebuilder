@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Tell us about your project. We'll respond within 24 hours." />
+    <meta name="theme-color" content="#2563EB" />
+    <title>Contact - BuildifyAi</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body data-page="contact">
+    <div id="site-nav"></div>
+
+    <main class="contact-page">
+        <div class="contact-grid">
+            <div class="contact-info reveal">
+                <span class="eyebrow">Contact</span>
+                <h1>Let's build your <span class="gradient-text">idea</span>.</h1>
+                <p>Tell us a bit about your project. We'll get back within 24 hours with next steps and an honest opinion on scope.</p>
+
+                <div class="info-card">
+                    <div class="ico">📧</div>
+                    <div>
+                        <strong>Email</strong>
+                        <span>hello@buildifyai.com</span>
+                    </div>
+                </div>
+                <div class="info-card">
+                    <div class="ico">📞</div>
+                    <div>
+                        <strong>Phone</strong>
+                        <span>+1 (000) 000-0000</span>
+                    </div>
+                </div>
+                <div class="info-card">
+                    <div class="ico">📍</div>
+                    <div>
+                        <strong>Office</strong>
+                        <span>Remote-first · serving clients globally</span>
+                    </div>
+                </div>
+                <div class="info-card">
+                    <div class="ico">⏱️</div>
+                    <div>
+                        <strong>Response time</strong>
+                        <span>Usually within 24 hours, Mon–Fri</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-card reveal">
+                <h2>Start your project</h2>
+                <p class="sub">Free 30-minute consultation — no pressure, no spam.</p>
+
+                <form id="contactForm" novalidate>
+                    <div class="form-status"></div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="name">Full name</label>
+                            <input type="text" id="name" name="name" placeholder="Jane Doe" autocomplete="name" required />
+                            <small class="error-text" id="err-name"></small>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Work email</label>
+                            <input type="email" id="email" name="email" placeholder="jane@company.com" autocomplete="email" required />
+                            <small class="error-text" id="err-email"></small>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="company">Company (optional)</label>
+                            <input type="text" id="company" name="company" placeholder="Acme Inc." />
+                        </div>
+                        <div class="form-group">
+                            <label for="service">What do you need?</label>
+                            <select id="service" name="service">
+                                <option value="">Choose a service…</option>
+                                <option value="mobile">Mobile App Development</option>
+                                <option value="web">Website Development</option>
+                                <option value="design">UI / UX Design</option>
+                                <option value="support">Maintenance &amp; Support</option>
+                                <option value="other">Something else</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="message">Project details</label>
+                        <textarea id="message" name="message" placeholder="What are you building? Timeline? Budget range?" required></textarea>
+                        <small class="error-text" id="err-message"></small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block btn-lg">Let's Build Your Idea</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <div id="site-footer"></div>
+    <script src="js/main.js"></script>
+</body>
+</html>
