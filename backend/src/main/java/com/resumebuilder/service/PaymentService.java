@@ -1,10 +1,8 @@
 package com.resumebuilder.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.resumebuilder.client.RazorpayClient;
-import com.resumebuilder.config.RazorpayProperties;
-import com.resumebuilder.dto.CreateOrderRequest;
-import com.resumebuilder.dto.CreateOrderResponse;
+import com.resumebuilder.client.GooglePlayBillingClient;
+import com.resumebuilder.config.GooglePlayProperties;
 import com.resumebuilder.dto.VerifyPaymentRequest;
 import com.resumebuilder.dto.VerifyPaymentResponse;
 import com.resumebuilder.exception.ApiException;
@@ -21,59 +19,62 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Verifies Google Play in-app purchases and issues short-lived signed tokens
+ * the client can present to {@code /api/v1/resume/parse}.
+ */
 @Service
 public class PaymentService {
 
     private static final Logger log = LoggerFactory.getLogger(PaymentService.class);
     private static final long TOKEN_TTL_MS = 30 * 60 * 1000L;
 
-    private final RazorpayClient razorpayClient;
-    private final RazorpayProperties properties;
+    private final GooglePlayBillingClient billingClient;
+    private final GooglePlayProperties properties;
     private final Map<String, TokenRecord> verifiedTokens = new ConcurrentHashMap<>();
 
-    public PaymentService(RazorpayClient razorpayClient, RazorpayProperties properties) {
-        this.razorpayClient = razorpayClient;
+    public PaymentService(GooglePlayBillingClient billingClient, GooglePlayProperties properties) {
+        this.billingClient = billingClient;
         this.properties = properties;
     }
 
-    public CreateOrderResponse createOrder(CreateOrderRequest request) {
-        int amount = request.getAmount() != null ? request.getAmount() : properties.getAmount();
-        String currency = request.getCurrency() != null ? request.getCurrency() : properties.getCurrency();
-        String receipt = request.getReceipt() != null
-                ? request.getReceipt()
-                : "rcpt_" + UUID.randomUUID().toString().substring(0, 12);
-
-        if (amount != properties.getAmount()) {
-            log.warn("Client requested amount {} differs from configured {}; using configured value",
-                    amount, properties.getAmount());
-            amount = properties.getAmount();
-        }
-
-        JsonNode order = razorpayClient.createOrder(amount, currency, receipt);
-
-        CreateOrderResponse response = new CreateOrderResponse();
-        response.setOrderId(order.path("id").asText());
-        response.setAmount(order.path("amount").asInt());
-        response.setCurrency(order.path("currency").asText());
-        response.setReceipt(order.path("receipt").asText());
-        response.setStatus(order.path("status").asText());
-        response.setKeyId(properties.getKeyId());
-        return response;
-    }
-
     public VerifyPaymentResponse verifyPayment(VerifyPaymentRequest request) {
-        boolean valid = razorpayClient.verifySignature(
-                request.getRazorpayOrderId(),
-                request.getRazorpayPaymentId(),
-                request.getRazorpaySignature()
-        );
-
-        if (!valid) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Payment signature verification failed");
+        String productId = request.getProductId();
+        String purchaseToken = request.getPurchaseToken();
+        if (productId == null || productId.isBlank()) {
+            productId = properties.getProductId();
+        }
+        if (productId == null || productId.isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "productId is required");
+        }
+        if (!productId.equals(properties.getProductId())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "Unknown product id: " + productId);
         }
 
-        String token = issueToken(request.getRazorpayOrderId(), request.getRazorpayPaymentId());
-        return new VerifyPaymentResponse(true, token, "Payment verified successfully");
+        JsonNode purchase = billingClient.verifyProductPurchase(productId, purchaseToken);
+
+        // purchaseState: 0 = purchased, 1 = canceled, 2 = pending
+        int purchaseState = purchase.path("purchaseState").asInt(-1);
+        if (purchaseState != 0) {
+            log.warn("Rejected Google Play purchase. state={} token={}",
+                    purchaseState, abbreviate(purchaseToken));
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "Purchase is not in PURCHASED state (state=" + purchaseState + ")");
+        }
+
+        // consumptionState: 0 = yet to be consumed, 1 = consumed
+        int consumptionState = purchase.path("consumptionState").asInt(-1);
+        if (consumptionState == 1) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "This purchase has already been consumed");
+        }
+
+        // Mark as consumed on Google's side so it can't be reused.
+        billingClient.consumeProductPurchase(productId, purchaseToken);
+
+        String token = issueToken(productId, purchaseToken);
+        return new VerifyPaymentResponse(true, token, "Purchase verified successfully");
     }
 
     public boolean isTokenValid(String token) {
@@ -91,13 +92,13 @@ public class PaymentService {
         verifiedTokens.remove(token);
     }
 
-    private String issueToken(String orderId, String paymentId) {
+    private String issueToken(String productId, String purchaseToken) {
         String tokenId = UUID.randomUUID().toString();
         long expiresAt = System.currentTimeMillis() + TOKEN_TTL_MS;
-        String payload = tokenId + "|" + orderId + "|" + paymentId + "|" + expiresAt;
+        String payload = tokenId + "|" + productId + "|" + purchaseToken + "|" + expiresAt;
         String sig = hmac(payload);
         String token = tokenId + "." + sig;
-        verifiedTokens.put(token, new TokenRecord(orderId, paymentId, expiresAt, sig));
+        verifiedTokens.put(token, new TokenRecord(productId, purchaseToken, expiresAt));
         return token;
     }
 
@@ -106,18 +107,22 @@ public class PaymentService {
         if (dot < 0) return false;
         String tokenId = token.substring(0, dot);
         String sig = token.substring(dot + 1);
-        String payload = tokenId + "|" + record.orderId + "|" + record.paymentId + "|" + record.expiresAt;
-        String expected = hmac(payload);
-        return constantTimeEquals(expected, sig);
+        String payload = tokenId + "|" + record.productId + "|" + record.purchaseToken + "|" + record.expiresAt;
+        return constantTimeEquals(hmac(payload), sig);
     }
 
     private String hmac(String payload) {
         try {
+            String key = properties.getTokenSigningKey();
+            if (key == null || key.isBlank()) {
+                throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,
+                        "google-play.token-signing-key is not configured");
+            }
             Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(
-                    properties.getKeySecret().getBytes(StandardCharsets.UTF_8),
-                    "HmacSHA256"));
+            mac.init(new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
             return HexFormat.of().formatHex(mac.doFinal(payload.getBytes(StandardCharsets.UTF_8)));
+        } catch (ApiException e) {
+            throw e;
         } catch (Exception e) {
             throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "Token signing failed", e);
         }
@@ -132,5 +137,10 @@ public class PaymentService {
         return result == 0;
     }
 
-    private record TokenRecord(String orderId, String paymentId, long expiresAt, String signature) {}
+    private static String abbreviate(String s) {
+        if (s == null) return "<null>";
+        return s.length() > 16 ? s.substring(0, 8) + "..." + s.substring(s.length() - 4) : s;
+    }
+
+    private record TokenRecord(String productId, String purchaseToken, long expiresAt) {}
 }

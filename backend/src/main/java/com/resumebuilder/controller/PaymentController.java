@@ -1,7 +1,5 @@
 package com.resumebuilder.controller;
 
-import com.resumebuilder.dto.CreateOrderRequest;
-import com.resumebuilder.dto.CreateOrderResponse;
 import com.resumebuilder.dto.VerifyPaymentRequest;
 import com.resumebuilder.dto.VerifyPaymentResponse;
 import com.resumebuilder.service.PaymentService;
@@ -21,12 +19,12 @@ public class PaymentController {
         this.paymentService = paymentService;
     }
 
-    @PostMapping("/create-order")
-    public ResponseEntity<CreateOrderResponse> createOrder(@RequestBody(required = false) CreateOrderRequest request) {
-        CreateOrderRequest req = request != null ? request : new CreateOrderRequest();
-        return ResponseEntity.ok(paymentService.createOrder(req));
-    }
-
+    /**
+     * Verifies a Google Play in-app purchase. The mobile client purchases a
+     * consumable product via Google Play Billing, receives a {@code productId}
+     * and {@code purchaseToken}, and posts them here. On success the server
+     * issues a single-use signed token the client uses to call /resume/parse.
+     */
     @PostMapping("/verify")
     public ResponseEntity<VerifyPaymentResponse> verify(@RequestBody VerifyPaymentRequest request) {
         return ResponseEntity.ok(paymentService.verifyPayment(request));

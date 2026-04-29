@@ -1,16 +1,12 @@
 package com.resumebuilder.dto;
 
 public class VerifyPaymentRequest {
-    private String razorpayOrderId;
-    private String razorpayPaymentId;
-    private String razorpaySignature;
+    private String productId;
+    private String purchaseToken;
 
-    public String getRazorpayOrderId() { return razorpayOrderId; }
-    public void setRazorpayOrderId(String razorpayOrderId) { this.razorpayOrderId = razorpayOrderId; }
+    public String getProductId() { return productId; }
+    public void setProductId(String productId) { this.productId = productId; }
 
-    public String getRazorpayPaymentId() { return razorpayPaymentId; }
-    public void setRazorpayPaymentId(String razorpayPaymentId) { this.razorpayPaymentId = razorpayPaymentId; }
-
-    public String getRazorpaySignature() { return razorpaySignature; }
-    public void setRazorpaySignature(String razorpaySignature) { this.razorpaySignature = razorpaySignature; }
+    public String getPurchaseToken() { return purchaseToken; }
+    public void setPurchaseToken(String purchaseToken) { this.purchaseToken = purchaseToken; }
 }

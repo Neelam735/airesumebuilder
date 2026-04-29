@@ -1,16 +1,27 @@
 # AI Resume Builder
 
 A production-ready resume builder with three templates, live preview, PDF export, and an
-AI-powered "Import & Improve Resume" flow gated behind a ₹29 Razorpay payment.
+AI-powered "Import & Improve Resume" flow gated behind a ₹29 Google Play in-app purchase
+(in the Android app) and a smart-apply flow that ranks remote jobs by skill overlap.
 
-- **Frontend** — Vite + React 18 + TypeScript + Tailwind + Zustand + react-hook-form
+- **Web frontend** — Vite + React 18 + TypeScript + Tailwind + Zustand
+- **Android app** — Flutter 3.19+ (Dart 3.3+) with Material 3 dark UI
 - **Backend** — Java 17 + Spring Boot 3 (REST + WebClient)
-- **Payments** — Razorpay (server-side order creation + HMAC-SHA256 signature verification)
+- **Payments** — Google Play Billing (consumable in-app product), verified
+  server-side via the Android Publisher API
 - **AI** — Google Gemini (`generateContent`) with JSON response mode
-- **PDF** — `pdfjs-dist` for parsing, `html2pdf.js` for export
+- **Job matching** — [Remotive](https://remotive.com/api-documentation) public API,
+  ranked by weighted skill overlap
+- **PDF** — `pdfjs-dist` (web) / `syncfusion_flutter_pdf` (mobile) for parsing;
+  `html2pdf.js` (web) / `pdf` + `printing` (mobile) for export
 
-No database is required — everything is auto-saved to `localStorage`, and verified
+No database is required — everything is auto-saved to local storage, and verified
 payment tokens live in an in-memory map on the backend.
+
+> AI improvement is paid only in the Android app (Google Play in-app purchase).
+> The web frontend's "Improve" button shows a "Get on Android" notice — all other
+> features (build, edit, export PDF, job match, cover letter draft) remain free
+> on the web.
 
 ---
 
@@ -24,41 +35,60 @@ airesumebuilder/
 │       ├── ResumeBuilderApplication.java
 │       ├── config/                # CORS + @ConfigurationProperties
 │       ├── controller/            # REST endpoints
-│       ├── service/               # PaymentService, ResumeService
-│       ├── client/                # RazorpayClient, GeminiClient
+│       ├── service/               # PaymentService, ResumeService, JobsService
+│       ├── client/                # GooglePlayBillingClient, GeminiClient, RemotiveClient
 │       ├── dto/
 │       └── exception/
 │   └── src/main/resources/application.yml
 │
-└── frontend/                      # React + Vite app
-    ├── index.html
-    └── src/
-        ├── components/            # UI building blocks + ImproveModal
-        ├── pages/BuilderPage.tsx  # 3-pane layout
-        ├── templates/             # Classic / Modern / Minimal
-        ├── hooks/useRazorpay.ts
-        ├── store/resumeStore.ts   # Zustand + persist
-        ├── utils/                 # api, pdf parse, pdf export, score
-        └── types/resume.ts
+├── frontend/                      # React + Vite web app
+│   ├── index.html
+│   └── src/
+│       ├── components/            # UI building blocks
+│       ├── pages/BuilderPage.tsx  # 3-pane layout
+│       ├── templates/             # Classic / Modern / Minimal
+│       ├── store/resumeStore.ts   # Zustand + persist
+│       ├── utils/                 # api, pdf parse, pdf export, score
+│       └── types/resume.ts
+│
+└── mobile/                        # Flutter Android app
+    ├── pubspec.yaml
+    ├── android/                   # AndroidManifest patch + proguard
+    └── lib/
+        ├── main.dart, app.dart, theme.dart
+        ├── models/                # ResumeData, JobMatch
+        ├── state/                 # Provider + persistence
+        ├── services/              # api, billing, storage, pdf_extract, pdf_export
+        ├── pdf/templates.dart     # 3 templates rendered via `pdf` package
+        ├── widgets/               # forms, preview, improve_dialog, jobs, apply
+        └── screens/builder_screen.dart
 ```
 
 ---
 
-## How the payment-gated AI flow works
+## How the payment-gated AI flow works (Android app)
 
-1. User clicks **✨ Import & Improve Resume**.
-2. Modal opens showing **₹29** unlock; clicking **Pay** calls `POST /api/v1/payment/create-order`.
-3. Razorpay Checkout opens with the returned `order_id` and `key_id`.
-4. After the user pays, Razorpay invokes the handler with `razorpay_payment_id`,
-   `razorpay_order_id`, and `razorpay_signature`.
-5. Frontend calls `POST /api/v1/payment/verify`. The backend computes
-   `HMAC_SHA256(order_id + "|" + payment_id, key_secret)` and compares it to the signature
-   in **constant time**. On success it issues a short-lived signed payment token.
-6. The PDF upload step only unlocks once a valid token is held.
-7. Frontend extracts text with `pdfjs-dist` and posts it together with the token to
-   `POST /api/v1/resume/parse`. The backend rejects the request unless the token validates.
-8. OpenAI returns improved structured JSON, the backend forwards it, and the frontend merges it
-   into the form. The token is consumed (single-use) after a successful parse.
+1. User taps **Improve** in the Flutter app.
+2. The app shows a paywall card with the price returned by Google Play.
+3. Tapping **Pay with Google Play** invokes `InAppPurchase.buyConsumable`,
+   which opens Play's native checkout for the `ai_resume_improvement` SKU.
+4. On success, the app posts `{productId, purchaseToken}` to
+   `POST /api/v1/payment/verify`.
+5. The backend calls the **Android Publisher API** at
+   `purchases/products/{productId}/tokens/{purchaseToken}` using a
+   service-account access token, checks `purchaseState == 0` and
+   `consumptionState != 1`, then **consumes** the purchase server-side.
+6. On success it issues a short-lived HMAC-signed payment token.
+7. The PDF upload step only unlocks once a valid token is held.
+8. App extracts text with `syncfusion_flutter_pdf` and posts it with the
+   token to `POST /api/v1/resume/parse`. The backend rejects the request
+   unless the token validates.
+9. Gemini returns improved structured JSON; the app merges it into the form
+   and switches to the Preview tab. The token is consumed (single-use)
+   after a successful parse.
+
+The web app's Improve button shows a "Get on Android" notice — Google Play
+Billing only works inside the Android app, so AI improve is mobile-only.
 
 ---
 
@@ -68,7 +98,8 @@ airesumebuilder/
 
 - Java 17+
 - Maven 3.9+
-- Razorpay test account → `KEY_ID` + `KEY_SECRET`
+- Google Play Console access for the Android listing (any track)
+- Service-account JSON with "View financial data" permission for the app
 - Google Gemini API key — get one from https://aistudio.google.com/apikey
 
 ### Run locally
@@ -76,11 +107,12 @@ airesumebuilder/
 ```bash
 cd backend
 
-export RAZORPAY_KEY_ID=rzp_test_xxxxx
-export RAZORPAY_KEY_SECRET=your_test_secret
+export GOOGLE_PLAY_PACKAGE_NAME=com.resumebuilder.app
+export GOOGLE_PLAY_PRODUCT_ID=ai_resume_improvement
+export GOOGLE_PLAY_SERVICE_ACCOUNT_JSON=/etc/secrets/play-service-account.json
+export PAYMENT_TOKEN_SIGNING_KEY=replace_with_at_least_32_random_bytes
 export GEMINI_API_KEY=your_gemini_api_key
 # optional overrides
-export RAZORPAY_AMOUNT=2900            # paise = ₹29.00
 export GEMINI_MODEL=gemini-2.5-flash   # or gemini-2.5-pro, gemini-2.0-flash. (1.5 family is deprecated.)
 export GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta
 export GEMINI_JSON_MODE=true
@@ -98,29 +130,27 @@ curl http://localhost:8080/api/v1/health
 
 ### REST API
 
-| Method | Path                              | Purpose                                  |
-| ------ | --------------------------------- | ---------------------------------------- |
-| `POST` | `/api/v1/payment/create-order`    | Creates a Razorpay order (₹29 default)   |
-| `POST` | `/api/v1/payment/verify`          | Verifies signature, returns payment token|
-| `POST` | `/api/v1/resume/parse`            | AI-improves resume; requires token       |
-| `POST` | `/api/v1/jobs/match`              | Ranks remote jobs by resume skills       |
-| `POST` | `/api/v1/jobs/cover-letter`       | Drafts a tailored cover letter via AI    |
-| `GET`  | `/api/v1/health`                  | Liveness                                 |
+| Method | Path                              | Purpose                                       |
+| ------ | --------------------------------- | --------------------------------------------- |
+| `POST` | `/api/v1/payment/verify`          | Verifies a Google Play purchase, returns token|
+| `POST` | `/api/v1/resume/parse`            | AI-improves resume; requires token            |
+| `POST` | `/api/v1/jobs/match`              | Ranks remote jobs by resume skills            |
+| `POST` | `/api/v1/jobs/cover-letter`       | Drafts a tailored cover letter via AI         |
+| `GET`  | `/api/v1/health`                  | Liveness                                      |
 
 `POST /api/v1/payment/verify` body:
 
 ```json
 {
-  "razorpayOrderId": "order_...",
-  "razorpayPaymentId": "pay_...",
-  "razorpaySignature": "<hex>"
+  "productId": "ai_resume_improvement",
+  "purchaseToken": "<token returned by Google Play Billing>"
 }
 ```
 
 Response:
 
 ```json
-{ "verified": true, "paymentToken": "<token>", "message": "Payment verified successfully" }
+{ "verified": true, "paymentToken": "<server token>", "message": "Purchase verified successfully" }
 ```
 
 `POST /api/v1/resume/parse` body:
@@ -153,6 +183,24 @@ the ₹29 fee covers the AI resume rewrite only.
 > uses these endpoints to (1) match jobs, (2) draft a cover letter, and
 > (3) download the resume PDF + open the listing in a new tab so the user can
 > finalise the application themselves.
+
+---
+
+## Android app
+
+See [`mobile/README.md`](mobile/README.md) for full Flutter + Google Play setup.
+Quick start:
+
+```bash
+cd mobile
+flutter create --org com.resumebuilder --project-name resume_builder --platforms=android .
+flutter pub get
+flutter run --dart-define=API_BASE=http://10.0.2.2:8080/api/v1
+```
+
+The first run only needs Play Services to be present; the actual purchase flow
+requires a signed build uploaded to an internal testing track in Play Console
+with a license-tester account.
 
 ---
 
