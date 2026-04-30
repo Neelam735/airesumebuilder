@@ -186,6 +186,15 @@ the ₹29 fee covers the AI resume rewrite only.
 
 ---
 
+## Deployment
+
+See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for a full walk-through of
+deploying the backend to Render in ~5 minutes (free tier, auto-HTTPS,
+Google Play service-account mounted as a secret file). The same Dockerfile
+also works on Cloud Run, Fly.io, Railway, or any VPS.
+
+---
+
 ## Android app
 
 See [`mobile/README.md`](mobile/README.md) for full Flutter + Google Play setup.
