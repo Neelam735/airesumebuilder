@@ -63,12 +63,11 @@ class _ImproveDialogState extends State<ImproveDialog> {
 
   Future<void> _pickAndProcess() async {
     if (_paymentToken == null) return;
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
-      allowedExtensions: const ['pdf'],
-      allowMultiple: false,
-      withData: false,
+      allowedExtensions: ['pdf'],
     );
+
     if (result == null || result.files.isEmpty) return;
     final path = result.files.single.path;
     if (path == null) return;

@@ -21,28 +21,28 @@ dependencies:
 
   # Google Play in-app billing
   in_app_purchase: ^3.2.0
-  in_app_purchase_android: ^0.3.6+8
+  in_app_purchase_android: ^0.4.0+10
 
   # PDF generation + sharing
   pdf: ^3.10.8
   printing: ^5.13.1
 
   # PDF text extraction (community-licensed)
-  syncfusion_flutter_pdf: ^24.2.9
+  syncfusion_flutter_pdf: ^33.2.4
 
   # File picking
-  file_picker: ^8.0.3
 
   # Open URLs (for "Apply with AI" → job listing)
   url_launcher: ^6.2.6
 
   # Useful UX bits
   flutter_markdown: ^0.7.1
+  file_picker: ^11.0.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.2
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true

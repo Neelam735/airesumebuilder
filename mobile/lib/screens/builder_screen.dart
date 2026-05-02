@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../services/api.dart';
 import '../services/billing.dart';
@@ -9,6 +10,7 @@ import '../theme.dart';
 import '../widgets/apply_dialog.dart' show ApplyDialog; // unused but explicit
 import '../widgets/forms.dart';
 import '../widgets/improve_dialog.dart';
+import '../widgets/jobs_panel.dart';
 import '../widgets/jobs_panel.dart';
 import '../widgets/preview_widget.dart';
 

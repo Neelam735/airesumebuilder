@@ -17,19 +17,21 @@ class AppColors {
 
 ThemeData buildAppTheme() {
   const seed = AppColors.brand;
+
   final base = ThemeData(
     brightness: Brightness.dark,
+    useMaterial3: true,
+    fontFamily: 'Roboto',
     colorScheme: ColorScheme.fromSeed(
       seedColor: seed,
       brightness: Brightness.dark,
+    ).copyWith(
       surface: AppColors.card,
       background: AppColors.bg,
       primary: AppColors.brand,
     ),
     scaffoldBackgroundColor: AppColors.bg,
     cardColor: AppColors.card,
-    useMaterial3: true,
-    fontFamily: 'Roboto',
   );
 
   return base.copyWith(
@@ -39,6 +41,7 @@ ThemeData buildAppTheme() {
       elevation: 0,
       centerTitle: false,
     ),
+
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppColors.soft,
@@ -59,27 +62,38 @@ ThemeData buildAppTheme() {
       labelStyle: const TextStyle(color: AppColors.inkMuted, fontSize: 12),
       hintStyle: const TextStyle(color: AppColors.inkDim),
     ),
+
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.brand,
         foregroundColor: Colors.white,
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
       ),
     ),
+
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.ink,
         side: const BorderSide(color: AppColors.border),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
       ),
     ),
+
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(foregroundColor: AppColors.inkMuted),
+      style: TextButton.styleFrom(
+        foregroundColor: AppColors.inkMuted,
+      ),
     ),
-    cardTheme: CardTheme(
+
+    // ✅ FIXED (Material 3)
+    cardTheme: CardThemeData(
       color: AppColors.card,
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -87,13 +101,24 @@ ThemeData buildAppTheme() {
         side: const BorderSide(color: AppColors.border),
       ),
     ),
-    dialogTheme: const DialogTheme(backgroundColor: AppColors.card),
+
+    // ✅ FIXED (Material 3)
+    dialogTheme: const DialogThemeData(
+      backgroundColor: AppColors.card,
+    ),
+
     dividerColor: AppColors.border,
+
     chipTheme: ChipThemeData(
       backgroundColor: AppColors.soft,
       side: const BorderSide(color: AppColors.border),
-      labelStyle: const TextStyle(color: AppColors.ink, fontSize: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+      labelStyle: const TextStyle(
+        color: AppColors.ink,
+        fontSize: 12,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(6),
+      ),
     ),
   );
 }
