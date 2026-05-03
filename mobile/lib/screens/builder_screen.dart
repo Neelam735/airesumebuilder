@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:file_picker/file_picker.dart';
 
 import '../services/api.dart';
 import '../services/billing.dart';
 import '../services/pdf_export.dart';
 import '../state/resume_provider.dart';
 import '../theme.dart';
-import '../widgets/apply_dialog.dart' show ApplyDialog; // unused but explicit
+import '../widgets/enhance_dialog.dart';
 import '../widgets/forms.dart';
-import '../widgets/improve_dialog.dart';
 import '../widgets/jobs_panel.dart';
-import '../widgets/jobs_panel.dart';
+import '../widgets/payment_dialog.dart';
 import '../widgets/preview_widget.dart';
 
 class BuilderScreen extends StatefulWidget {
@@ -34,8 +32,8 @@ class _BuilderScreenState extends State<BuilderScreen>
     _tabs = TabController(length: 3, vsync: this);
     _api = ResumeApi();
     _billing = BillingService(_api);
-    // Best-effort load. If Play isn't reachable (e.g. running on emulator
-    // without Play Services), the Improve dialog will surface the error.
+    // Best-effort load of the in-app product so the price renders in the
+    // payment dialog. Silent if Play Services isn't available (emulator).
     _billing.load();
   }
 
@@ -46,11 +44,25 @@ class _BuilderScreenState extends State<BuilderScreen>
     super.dispose();
   }
 
+  /// Entry point for every "Download" tap in the app. Routes through the
+  /// Google Play paywall if the resume has been AI-enhanced and not paid
+  /// for yet. Otherwise the system Share/Save sheet opens directly.
   Future<void> _download() async {
-    final resume = context.read<ResumeProvider>().data;
+    final provider = context.read<ResumeProvider>();
+    final mustPay = provider.aiEnhanced && !provider.hasPaidForAi;
+
+    if (mustPay) {
+      final paid = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => PaymentDialog(billing: _billing),
+      );
+      if (paid != true) return;
+    }
+
     setState(() => _exporting = true);
     try {
-      await PdfExport.shareOrSave(resume);
+      await PdfExport.shareOrSave(provider.data);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -61,11 +73,11 @@ class _BuilderScreenState extends State<BuilderScreen>
     }
   }
 
-  void _improve() {
+  void _enhance() {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => ImproveDialog(api: _api, billing: _billing),
+      builder: (_) => EnhanceDialog(api: _api),
     );
   }
 
@@ -75,7 +87,8 @@ class _BuilderScreenState extends State<BuilderScreen>
       builder: (ctx) => AlertDialog(
         title: const Text('Reset resume?'),
         content: const Text(
-            'Your current data will be replaced with the example resume.'),
+            'Your current data and any AI-enhancement unlock will be replaced '
+            'with the example resume.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
@@ -94,6 +107,7 @@ class _BuilderScreenState extends State<BuilderScreen>
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<ResumeProvider>();
     return Scaffold(
       appBar: AppBar(
         title: Row(children: [
@@ -117,7 +131,7 @@ class _BuilderScreenState extends State<BuilderScreen>
             children: [
               Text('Resume Forge AI',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-              Text('Build · Improve · Apply',
+              Text('Build · Enhance · Apply',
                   style: TextStyle(fontSize: 10, color: AppColors.inkMuted)),
             ],
           ),
@@ -129,7 +143,9 @@ class _BuilderScreenState extends State<BuilderScreen>
             onPressed: _confirmReset,
           ),
           IconButton(
-            tooltip: 'Download PDF',
+            tooltip: provider.aiEnhanced && !provider.hasPaidForAi
+                ? 'Download (paid for AI version)'
+                : 'Download',
             icon: _exporting
                 ? const SizedBox(
                     width: 18,
@@ -154,9 +170,9 @@ class _BuilderScreenState extends State<BuilderScreen>
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _improve,
+        onPressed: _enhance,
         icon: const Icon(Icons.auto_awesome),
-        label: const Text('Improve'),
+        label: const Text('Enhance Resume using AI'),
         backgroundColor: AppColors.brand,
         foregroundColor: Colors.white,
       ),
@@ -164,7 +180,7 @@ class _BuilderScreenState extends State<BuilderScreen>
         controller: _tabs,
         children: [
           _editTab(),
-          const ResumePreview(),
+          _previewTab(provider),
           SingleChildScrollView(
             padding: const EdgeInsets.all(12),
             child: JobsPanel(api: _api),
@@ -187,6 +203,95 @@ class _BuilderScreenState extends State<BuilderScreen>
         LanguagesForm(),
         SizedBox(height: 80), // breathing room for FAB
       ],
+    );
+  }
+
+  Widget _previewTab(ResumeProvider provider) {
+    return Stack(
+      children: [
+        const ResumePreview(),
+        Positioned(
+          left: 12,
+          right: 12,
+          bottom: 12,
+          child: SafeArea(
+            child: _DownloadBar(
+              busy: _exporting,
+              aiEnhanced: provider.aiEnhanced,
+              paid: provider.hasPaidForAi,
+              price: _billing.product?.price ?? '₹29',
+              onPressed: _exporting ? null : _download,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DownloadBar extends StatelessWidget {
+  final bool busy;
+  final bool aiEnhanced;
+  final bool paid;
+  final String price;
+  final VoidCallback? onPressed;
+
+  const _DownloadBar({
+    required this.busy,
+    required this.aiEnhanced,
+    required this.paid,
+    required this.price,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final mustPay = aiEnhanced && !paid;
+    final label = busy
+        ? 'Preparing…'
+        : mustPay
+            ? 'Download (Pay $price)'
+            : 'Download Resume';
+
+    return Material(
+      color: AppColors.card,
+      elevation: 8,
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (aiEnhanced)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(children: [
+                  const Icon(Icons.auto_awesome,
+                      size: 14, color: AppColors.brand),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      paid
+                          ? 'AI-enhanced version unlocked. Re-download anytime.'
+                          : 'AI-enhanced version. Pay $price to download the polished PDF.',
+                      style: const TextStyle(
+                          fontSize: 11, color: AppColors.inkMuted),
+                    ),
+                  ),
+                ]),
+              ),
+            ElevatedButton.icon(
+              icon: Icon(mustPay ? Icons.lock_open : Icons.download_rounded),
+              label: Text(label),
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -60,21 +60,13 @@ public class ResumeService {
             """;
 
     private final GeminiClient geminiClient;
-    private final PaymentService paymentService;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public ResumeService(GeminiClient geminiClient, PaymentService paymentService) {
+    public ResumeService(GeminiClient geminiClient) {
         this.geminiClient = geminiClient;
-        this.paymentService = paymentService;
     }
 
     public ResumeParseResponse parseAndImprove(ResumeParseRequest request) {
-        if (!paymentService.isTokenValid(request.getPaymentToken())) {
-            log.warn("Resume parse blocked: invalid or missing payment token");
-            throw new ApiException(HttpStatus.PAYMENT_REQUIRED,
-                    "Payment required. Please complete payment to use AI improvement.");
-        }
-
         String text = request.getResumeText();
         if (text == null || text.isBlank()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Resume text is empty");
@@ -96,7 +88,6 @@ public class ResumeService {
                     "AI returned invalid JSON. Please try again.", e);
         }
 
-        paymentService.consumeToken(request.getPaymentToken());
         return new ResumeParseResponse(parsed, "Resume improved successfully");
     }
 

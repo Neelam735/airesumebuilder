@@ -1,0 +1,7 @@
+# Copy to android/key.properties and fill in. NEVER commit the real file.
+# Used by android/app/build.gradle to sign release builds for Play Console.
+
+storePassword=changeme
+keyPassword=changeme
+keyAlias=upload
+storeFile=../keystore/upload-keystore.jks

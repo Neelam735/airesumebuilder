@@ -8,13 +8,43 @@ import '../services/storage.dart';
 class ResumeProvider extends ChangeNotifier {
   ResumeProvider({required ResumeStorage storage, required ResumeData initial})
       : _storage = storage,
-        _data = initial;
+        _data = initial,
+        _aiEnhanced = storage.getAiEnhanced(),
+        _aiPaymentToken = storage.getAiPaymentToken();
 
   final ResumeStorage _storage;
   ResumeData _data;
   Timer? _saveDebounce;
 
+  /// True after the resume has been rewritten by Gemini at least once. Goes
+  /// false again when the user resets to the sample resume.
+  bool _aiEnhanced;
+
+  /// Server-issued payment token after a successful Google Play purchase
+  /// for the current AI-enhanced resume. While set, the user can download
+  /// the AI-enhanced PDF without paying again.
+  String? _aiPaymentToken;
+
   ResumeData get data => _data;
+  bool get aiEnhanced => _aiEnhanced;
+  bool get hasPaidForAi => _aiPaymentToken != null && _aiPaymentToken!.isNotEmpty;
+  String? get aiPaymentToken => _aiPaymentToken;
+
+  /// Marks the current resume as AI-rewritten. Clears any prior payment
+  /// token so the next download will require a fresh payment.
+  void markAiEnhanced() {
+    _aiEnhanced = true;
+    _aiPaymentToken = null;
+    _storage.setAiEnhanced(true);
+    _storage.setAiPaymentToken(null);
+    notifyListeners();
+  }
+
+  void setAiPaymentToken(String token) {
+    _aiPaymentToken = token;
+    _storage.setAiPaymentToken(token);
+    notifyListeners();
+  }
 
   void _persistDebounced() {
     _saveDebounce?.cancel();
@@ -155,6 +185,10 @@ class ResumeProvider extends ChangeNotifier {
 
   void resetToSample() {
     _data = ResumeData.sample();
+    _aiEnhanced = false;
+    _aiPaymentToken = null;
+    _storage.setAiEnhanced(false);
+    _storage.setAiPaymentToken(null);
     _bump();
   }
 

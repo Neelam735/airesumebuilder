@@ -6,68 +6,35 @@ import 'package:provider/provider.dart';
 
 import '../models/resume.dart';
 import '../services/api.dart';
-import '../services/billing.dart';
 import '../services/pdf_extract.dart';
 import '../state/resume_provider.dart';
 import '../theme.dart';
 
-enum _Stage {
-  idle,
-  paying,
-  paid,
-  extracting,
-  improving,
-  filling,
-  done,
-  error,
-}
+enum _Stage { idle, extracting, improving, filling, done, error }
 
-class ImproveDialog extends StatefulWidget {
+/// Free flow: pick a PDF, extract text, send to /resume/parse, merge the
+/// AI-enhanced JSON back into the form, and flip the aiEnhanced flag so
+/// the next download is paid.
+class EnhanceDialog extends StatefulWidget {
   final ResumeApi api;
-  final BillingService billing;
 
-  const ImproveDialog({super.key, required this.api, required this.billing});
+  const EnhanceDialog({super.key, required this.api});
 
   @override
-  State<ImproveDialog> createState() => _ImproveDialogState();
+  State<EnhanceDialog> createState() => _EnhanceDialogState();
 }
 
-class _ImproveDialogState extends State<ImproveDialog> {
+class _EnhanceDialogState extends State<EnhanceDialog> {
   _Stage _stage = _Stage.idle;
-  String _status = '';
-  String? _paymentToken;
   String? _error;
 
-  Future<void> _startPurchase() async {
-    setState(() {
-      _stage = _Stage.paying;
-      _error = null;
-      _status = 'Opening Google Play…';
-    });
-    try {
-      final token = await widget.billing.purchaseAndVerify(
-        onStatus: (s) => setState(() => _status = s),
-      );
-      setState(() {
-        _paymentToken = token;
-        _stage = _Stage.paid;
-        _status = 'Payment verified. Upload your PDF resume.';
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
-        _stage = _Stage.error;
-      });
-    }
-  }
-
   Future<void> _pickAndProcess() async {
-    if (_paymentToken == null) return;
-    final result = await FilePicker.pickFiles(
+    final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pdf'],
+      allowedExtensions: const ['pdf'],
+      allowMultiple: false,
+      withData: false,
     );
-
     if (result == null || result.files.isEmpty) return;
     final path = result.files.single.path;
     if (path == null) return;
@@ -81,15 +48,17 @@ class _ImproveDialogState extends State<ImproveDialog> {
       setState(() => _stage = _Stage.improving);
 
       final response = await widget.api.parseResume(
-        paymentToken: _paymentToken!,
+        paymentToken: '',
         resumeText: text,
       );
       final improved = (response['resume'] as Map<String, dynamic>?) ?? {};
 
       setState(() => _stage = _Stage.filling);
       if (!mounted) return;
-      final next = _mergeAi(context.read<ResumeProvider>().data, improved);
-      context.read<ResumeProvider>().replaceAll(next);
+      final provider = context.read<ResumeProvider>();
+      final next = _mergeAi(provider.data, improved);
+      provider.replaceAll(next);
+      provider.markAiEnhanced();
 
       setState(() => _stage = _Stage.done);
     } catch (e) {
@@ -106,14 +75,13 @@ class _ImproveDialogState extends State<ImproveDialog> {
       return v is String && v.trim().isNotEmpty ? v.trim() : fallback;
     }
 
-    List<String> list(String key) =>
-        (ai[key] is List)
-            ? (ai[key] as List)
-                .map((e) => e?.toString() ?? '')
-                .map((e) => e.trim())
-                .where((e) => e.isNotEmpty)
-                .toList()
-            : <String>[];
+    List<String> list(String key) => (ai[key] is List)
+        ? (ai[key] as List)
+            .map((e) => e?.toString() ?? '')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList()
+        : <String>[];
 
     final exp = (ai['experience'] is List)
         ? (ai['experience'] as List)
@@ -172,8 +140,9 @@ class _ImproveDialogState extends State<ImproveDialog> {
                   ),
                   const SizedBox(width: 8),
                   const Expanded(
-                    child: Text('Import & Improve Resume',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                    child: Text('Enhance Resume using AI',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600)),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
@@ -183,7 +152,8 @@ class _ImproveDialogState extends State<ImproveDialog> {
               ),
               const SizedBox(height: 4),
               const Text(
-                'Upload your existing PDF and let AI rewrite it using strong, professional language.',
+                'Upload your existing PDF and let AI rewrite it using strong, professional language. '
+                'Enhancement is free — payment is only required when you download.',
                 style: TextStyle(color: AppColors.inkMuted, fontSize: 12),
               ),
               const SizedBox(height: 16),
@@ -198,9 +168,6 @@ class _ImproveDialogState extends State<ImproveDialog> {
   Widget _body() {
     switch (_stage) {
       case _Stage.idle:
-      case _Stage.paying:
-        return _payCta();
-      case _Stage.paid:
         return _uploadCta();
       case _Stage.extracting:
       case _Stage.improving:
@@ -211,13 +178,14 @@ class _ImproveDialogState extends State<ImproveDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _banner(
-              'Your resume has been improved and the form is filled.',
+              'Your resume has been enhanced. Preview it on the next tab; '
+              'payment is only needed when you tap Download.',
               AppColors.success,
             ),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('View improved resume'),
+              child: const Text('View enhanced resume'),
             ),
           ],
         );
@@ -230,7 +198,7 @@ class _ImproveDialogState extends State<ImproveDialog> {
             OutlinedButton(
               onPressed: () => setState(() {
                 _error = null;
-                _stage = _paymentToken != null ? _Stage.paid : _Stage.idle;
+                _stage = _Stage.idle;
               }),
               child: const Text('Try again'),
             ),
@@ -239,95 +207,35 @@ class _ImproveDialogState extends State<ImproveDialog> {
     }
   }
 
-  Widget _payCta() {
-    final price = widget.billing.product?.price ?? '₹29';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.brand.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.brand.withOpacity(0.3)),
-          ),
-          child: Row(
-            children: [
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Unlock AI improvement',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                    Text('One-time fee per use, billed by Google Play',
-                        style: TextStyle(color: AppColors.inkMuted, fontSize: 11)),
-                  ],
-                ),
-              ),
-              Text(price,
-                  style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.brand)),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-        ElevatedButton(
-          onPressed: _stage == _Stage.paying ? null : _startPurchase,
-          child: Text(_stage == _Stage.paying
-              ? (_status.isNotEmpty ? _status : 'Processing…')
-              : 'Pay with Google Play'),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Secure billing via Google Play. You\'ll be able to upload your PDF after the payment is verified.',
-          style: TextStyle(color: AppColors.inkMuted, fontSize: 11),
-        ),
-      ],
-    );
-  }
-
   Widget _uploadCta() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _banner('Payment verified. Upload your resume PDF below.', AppColors.success),
-        const SizedBox(height: 12),
-        InkWell(
-          onTap: _pickAndProcess,
+    return InkWell(
+      onTap: _pickAndProcess,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 28),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.border, width: 2),
           borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 28),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: AppColors.border,
-                width: 2,
-                style: BorderStyle.solid,
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Column(
-              children: [
-                Icon(Icons.upload_file, size: 32, color: AppColors.brand),
-                SizedBox(height: 6),
-                Text('Tap to choose a PDF',
-                    style: TextStyle(fontWeight: FontWeight.w500)),
-                SizedBox(height: 2),
-                Text('Standard resumes work best',
-                    style: TextStyle(color: AppColors.inkMuted, fontSize: 11)),
-              ],
-            ),
-          ),
         ),
-      ],
+        child: const Column(
+          children: [
+            Icon(Icons.upload_file, size: 32, color: AppColors.brand),
+            SizedBox(height: 6),
+            Text('Tap to choose a PDF',
+                style: TextStyle(fontWeight: FontWeight.w500)),
+            SizedBox(height: 2),
+            Text('Standard resumes work best',
+                style: TextStyle(color: AppColors.inkMuted, fontSize: 11)),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _processing() {
     final steps = [
       ('Extracting resume', _Stage.extracting),
-      ('Improving with AI', _Stage.improving),
+      ('Enhancing with AI', _Stage.improving),
       ('Auto-filling form', _Stage.filling),
     ];
     final activeIdx = steps.indexWhere((e) => e.$2 == _stage);
