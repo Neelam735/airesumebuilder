@@ -32,7 +32,7 @@ List<pw.Widget> _dispatchWidgets(ResumeData r, PdfColor accent) {
 
 pw.Widget _h(String s, {double size = 11, PdfColor? color, bool bold = false}) =>
     pw.Text(
-      s,
+      _safeText(s),
       style: pw.TextStyle(
         fontSize: size,
         color: color ?? PdfColors.grey800,
@@ -41,7 +41,7 @@ pw.Widget _h(String s, {double size = 11, PdfColor? color, bool bold = false}) =
     );
 
 pw.Widget _muted(String s, {double size = 9}) => pw.Text(
-      s,
+      _safeText(s),
       style: pw.TextStyle(fontSize: size, color: PdfColors.grey600),
     );
 
@@ -51,9 +51,11 @@ pw.Widget _row(List<String> items, {String sep = ' · '}) =>
       runSpacing: 2,
       children: items
           .where((e) => e.trim().isNotEmpty)
-          .map((s) => pw.Text(s, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)))
+          .map((s) => pw.Text(_safeText(s), style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)))
           .toList(),
     );
+
+String _safeText(String s) => s.replaceAll('–', '-').replaceAll('—', '-');
 
 // ---- Classic ---------------------------------------------------------------
 
@@ -206,7 +208,7 @@ pw.Widget _experienceRow(String left, String right, String duration, String desc
 // ---- Modern (sidebar) ------------------------------------------------------
 
 pw.Widget _modern(ResumeData r, PdfColor accent) {
-  final tint = PdfColor(accent.red, accent.green, accent.blue, 0.08);
+  final tint = PdfColor(accent.red, accent.green, accent.blue, 0.04);
   return pw.Column(
     crossAxisAlignment: pw.CrossAxisAlignment.stretch,
     children: [
@@ -346,7 +348,7 @@ pw.Widget _modern(ResumeData r, PdfColor accent) {
 }
 
 List<pw.Widget> _modernBlocks(ResumeData r, PdfColor accent) {
-  final tint = PdfColor(accent.red, accent.green, accent.blue, 0.08);
+  final tint = PdfColor(accent.red, accent.green, accent.blue, 0.04);
   final sections = <pw.Widget>[
     pw.Container(
       color: tint,
@@ -367,7 +369,7 @@ List<pw.Widget> _modernBlocks(ResumeData r, PdfColor accent) {
           ...[r.email, r.phone, r.location, r.linkedin].where((e) => e.trim().isNotEmpty).map(
                 (s) => pw.Padding(
                   padding: const pw.EdgeInsets.only(bottom: 2),
-                  child: pw.Text(s, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey800)),
+                  child: pw.Text(_safeText(s), style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey800)),
                 ),
               ),
         ],
@@ -396,7 +398,7 @@ List<pw.Widget> _modernBlocks(ResumeData r, PdfColor accent) {
       color: PdfColor(accent.red, accent.green, accent.blue, 0.14),
       borderRadius: pw.BorderRadius.circular(3),
     ),
-    child: pw.Text(s, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey900)),
+    child: pw.Text(_safeText(s), style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey900)),
   )).toList(), bottom: 4);
 
   addSection('Education', r.education.map((e) => pw.Padding(
