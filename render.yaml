@@ -4,7 +4,6 @@ services:
   - type: web
     name: resume-builder-backend
     runtime: docker
-    rootDir: backend
     dockerfilePath: ./Dockerfile
     plan: free                       # bump to starter (~$7/mo) for no cold starts
     region: singapore                # pick the region closest to your users
