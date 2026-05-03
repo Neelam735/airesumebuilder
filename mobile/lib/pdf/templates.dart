@@ -10,6 +10,7 @@ pw.Document buildResumePdf(ResumeData resume) {
     pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
       margin: const pw.EdgeInsets.all(0),
+      maxPages: 100,
       build: (ctx) => [_dispatch(resume, accent)],
     ),
   );
@@ -232,25 +233,8 @@ pw.Widget _modern(ResumeData r, PdfColor accent) {
                   ),
                 ),
             if (r.skills.isNotEmpty) ...[
-              pw.SizedBox(height: 12),
-              _modernHeading('Skills', accent),
-              pw.Wrap(
-                spacing: 4,
-                runSpacing: 4,
-                children: r.skills
-                    .where((s) => s.trim().isNotEmpty)
-                    .map(
-                      (s) => pw.Container(
-                        padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                        decoration: pw.BoxDecoration(
-                          color: PdfColor(accent.red, accent.green, accent.blue, 0.14),
-                          borderRadius: pw.BorderRadius.circular(3),
-                        ),
-                        child: pw.Text(s, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey900)),
-                      ),
-                    )
-                    .toList(),
-              ),
+              pw.SizedBox(height: 6),
+              _muted('${r.skills.where((s) => s.trim().isNotEmpty).length} skills listed', size: 8),
             ],
           ],
         ),
@@ -261,6 +245,27 @@ pw.Widget _modern(ResumeData r, PdfColor accent) {
           crossAxisAlignment: pw.CrossAxisAlignment.stretch,
           children: [
             if (r.education.isNotEmpty) ...[
+              if (r.skills.isNotEmpty) ...[
+                _modernSection('Skills', accent),
+                pw.Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: r.skills
+                      .where((s) => s.trim().isNotEmpty)
+                      .map(
+                        (s) => pw.Container(
+                          padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: pw.BoxDecoration(
+                            color: PdfColor(accent.red, accent.green, accent.blue, 0.14),
+                            borderRadius: pw.BorderRadius.circular(3),
+                          ),
+                          child: pw.Text(s, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey900)),
+                        ),
+                      )
+                      .toList(),
+                ),
+                pw.SizedBox(height: 8),
+              ],
               _modernSection('Education', accent),
               ...r.education.map(
                 (e) => pw.Padding(
