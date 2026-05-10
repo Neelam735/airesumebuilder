@@ -15,42 +15,95 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 
 export default function ModernTemplate({ resume, accent }: Props) {
-  const sidebarBg = hexToRgba(accent, 0.08);
   return (
-    <div className="resume-page font-sans grid grid-cols-[34%_66%] text-[13px]">
-      <aside className="p-8" style={{ backgroundColor: sidebarBg }}>
-        <div className="mb-6">
+    <div
+      className="resume-page font-sans text-[13px]"
+      style={{ display: 'grid', gridTemplateColumns: '34% 66%' }}
+    >
+      <aside
+        className="p-8"
+        style={{ backgroundColor: hexToRgba(accent, 0.07), minHeight: '100%' }}
+      >
+        {/* Name block */}
+        <div style={{ marginBottom: '24px' }}>
           <div
-            className="w-16 h-1.5 rounded-full mb-3"
-            style={{ backgroundColor: accent }}
+            style={{
+              width: '56px',
+              height: '5px',
+              borderRadius: '999px',
+              backgroundColor: accent,
+              marginBottom: '10px',
+            }}
           />
-          <h1 className="text-2xl font-bold leading-tight" style={{ color: '#111827' }}>
+          <h1
+            style={{
+              fontSize: '22px',
+              fontWeight: '700',
+              color: '#111827',
+              lineHeight: '1.25',
+              margin: 0,
+            }}
+          >
             {resume.name || 'Your Name'}
           </h1>
           {resume.title && (
-            <p className="text-sm font-medium mt-1" style={{ color: accent }}>
+            <p
+              style={{
+                fontSize: '12px',
+                fontWeight: '500',
+                color: accent,
+                marginTop: '4px',
+                marginBottom: 0,
+              }}
+            >
               {resume.title}
             </p>
           )}
         </div>
 
         <SidebarBlock title="Contact" accent={accent}>
-          <ul className="space-y-1.5 text-gray-800">
-            {resume.email && <li className="break-words">{resume.email}</li>}
-            {resume.phone && <li>{resume.phone}</li>}
-            {resume.location && <li>{resume.location}</li>}
-            {resume.linkedin && <li className="break-words">{resume.linkedin}</li>}
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {resume.email && (
+              <li style={{ color: '#374151', marginBottom: '6px', wordBreak: 'break-all' }}>
+                {resume.email}
+              </li>
+            )}
+            {resume.phone && (
+              <li style={{ color: '#374151', marginBottom: '6px' }}>{resume.phone}</li>
+            )}
+            {resume.location && (
+              <li style={{ color: '#374151', marginBottom: '6px' }}>{resume.location}</li>
+            )}
+            {resume.linkedin && (
+              <li style={{ color: '#374151', marginBottom: '6px', wordBreak: 'break-all' }}>
+                {resume.linkedin}
+              </li>
+            )}
           </ul>
         </SidebarBlock>
 
         {resume.skills.length > 0 && (
           <SidebarBlock title="Skills" accent={accent}>
-            <div className="flex flex-wrap gap-1.5">
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '6px',
+              }}
+            >
               {resume.skills.filter(Boolean).map((s, i) => (
                 <span
                   key={i}
-                  className="px-2 py-0.5 rounded text-[11px] font-medium"
-                  style={{ backgroundColor: hexToRgba(accent, 0.15), color: '#1f2937' }}
+                  style={{
+                    display: 'inline-block',
+                    backgroundColor: hexToRgba(accent, 0.15),
+                    color: '#1f2937',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    fontWeight: '500',
+                    whiteSpace: 'nowrap',
+                  }}
                 >
                   {s}
                 </span>
@@ -62,10 +115,12 @@ export default function ModernTemplate({ resume, accent }: Props) {
         {resume.education.length > 0 && (
           <SidebarBlock title="Education" accent={accent}>
             {resume.education.map((e) => (
-              <div key={e.id} className="mb-3">
-                <div className="font-semibold text-gray-900">{e.degree}</div>
-                <div className="text-gray-700 text-[12px]">{e.institution}</div>
-                {e.duration && <div className="text-gray-500 text-[11px]">{e.duration}</div>}
+              <div key={e.id} style={{ marginBottom: '12px' }}>
+                <div style={{ fontWeight: '600', color: '#111827' }}>{e.degree}</div>
+                <div style={{ color: '#374151', fontSize: '12px' }}>{e.institution}</div>
+                {e.duration && (
+                  <div style={{ color: '#6b7280', fontSize: '11px' }}>{e.duration}</div>
+                )}
               </div>
             ))}
           </SidebarBlock>
@@ -73,7 +128,9 @@ export default function ModernTemplate({ resume, accent }: Props) {
 
         {resume.languages.length > 0 && (
           <SidebarBlock title="Languages" accent={accent}>
-            <p className="text-gray-800">{resume.languages.filter(Boolean).join(', ')}</p>
+            <p style={{ color: '#374151', margin: 0 }}>
+              {resume.languages.filter(Boolean).join(', ')}
+            </p>
           </SidebarBlock>
         )}
       </aside>
@@ -88,22 +145,33 @@ export default function ModernTemplate({ resume, accent }: Props) {
         {resume.experience.length > 0 && (
           <MainBlock title="Experience" accent={accent}>
             {resume.experience.map((e) => (
-              <div key={e.id} className="mb-4 relative pl-4">
+              <div key={e.id} style={{ marginBottom: '16px', position: 'relative', paddingLeft: '16px' }}>
                 <span
-                  className="absolute left-0 top-2 w-1.5 h-1.5 rounded-full"
-                  style={{ backgroundColor: accent }}
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: '7px',
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: accent,
+                  }}
                 />
-                <div className="flex justify-between items-baseline">
-                  <h3 className="font-semibold text-gray-900">{e.role}</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <h3 style={{ fontWeight: '600', color: '#111827', margin: 0 }}>{e.role}</h3>
                   {e.duration && (
-                    <span className="text-[11px] text-gray-500">{e.duration}</span>
+                    <span style={{ fontSize: '11px', color: '#6b7280' }}>{e.duration}</span>
                   )}
                 </div>
                 {e.company && (
-                  <div className="text-[12px] text-gray-600 italic">{e.company}</div>
+                  <div style={{ fontSize: '12px', color: '#4b5563', fontStyle: 'italic' }}>
+                    {e.company}
+                  </div>
                 )}
                 {e.description && (
-                  <p className="mt-1 text-gray-800 whitespace-pre-line">{e.description}</p>
+                  <p style={{ marginTop: '4px', color: '#374151', whiteSpace: 'pre-line', margin: '4px 0 0' }}>
+                    {e.description}
+                  </p>
                 )}
               </div>
             ))}
@@ -113,12 +181,16 @@ export default function ModernTemplate({ resume, accent }: Props) {
         {resume.projects.length > 0 && (
           <MainBlock title="Projects" accent={accent}>
             {resume.projects.map((p) => (
-              <div key={p.id} className="mb-3">
-                <div className="flex justify-between">
-                  <span className="font-semibold text-gray-900">{p.name}</span>
-                  {p.link && <span className="text-[11px] text-gray-500">{p.link}</span>}
+              <div key={p.id} style={{ marginBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontWeight: '600', color: '#111827' }}>{p.name}</span>
+                  {p.link && (
+                    <span style={{ fontSize: '11px', color: '#6b7280' }}>{p.link}</span>
+                  )}
                 </div>
-                {p.description && <p className="text-gray-800">{p.description}</p>}
+                {p.description && (
+                  <p style={{ color: '#374151', margin: '2px 0 0' }}>{p.description}</p>
+                )}
               </div>
             ))}
           </MainBlock>
@@ -138,10 +210,17 @@ function SidebarBlock({
   children: ReactNode;
 }) {
   return (
-    <section className="mb-6">
+    <section style={{ marginBottom: '20px' }}>
       <h2
-        className="text-[11px] uppercase tracking-[0.2em] font-bold mb-2"
-        style={{ color: accent }}
+        style={{
+          fontSize: '10px',
+          textTransform: 'uppercase',
+          letterSpacing: '0.18em',
+          fontWeight: '700',
+          color: accent,
+          marginBottom: '8px',
+          marginTop: 0,
+        }}
       >
         {title}
       </h2>
@@ -160,10 +239,19 @@ function MainBlock({
   children: ReactNode;
 }) {
   return (
-    <section className="mb-5">
+    <section style={{ marginBottom: '20px' }}>
       <h2
-        className="text-[12px] uppercase tracking-[0.25em] font-bold pb-1 mb-3 border-b-2"
-        style={{ color: accent, borderColor: accent }}
+        style={{
+          fontSize: '11px',
+          textTransform: 'uppercase',
+          letterSpacing: '0.22em',
+          fontWeight: '700',
+          color: accent,
+          borderBottom: `2px solid ${accent}`,
+          paddingBottom: '4px',
+          marginBottom: '12px',
+          marginTop: 0,
+        }}
       >
         {title}
       </h2>
