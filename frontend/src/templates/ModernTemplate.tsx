@@ -6,14 +6,6 @@ interface Props {
   accent: string;
 }
 
-function hexToRgba(hex: string, alpha: number): string {
-  const h = hex.replace('#', '');
-  const r = parseInt(h.substring(0, 2), 16);
-  const g = parseInt(h.substring(2, 4), 16);
-  const b = parseInt(h.substring(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
 export default function ModernTemplate({ resume, accent }: Props) {
   return (
     <div
@@ -22,7 +14,7 @@ export default function ModernTemplate({ resume, accent }: Props) {
     >
       <aside
         className="p-8"
-        style={{ backgroundColor: hexToRgba(accent, 0.07), minHeight: '100%' }}
+        style={{ backgroundColor: '#f3f4f6', minHeight: '100%' }}
       >
         {/* Name block */}
         <div style={{ marginBottom: '24px' }}>
@@ -84,31 +76,9 @@ export default function ModernTemplate({ resume, accent }: Props) {
 
         {resume.skills.length > 0 && (
           <SidebarBlock title="Skills" accent={accent}>
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '6px',
-              }}
-            >
-              {resume.skills.filter(Boolean).map((s, i) => (
-                <span
-                  key={i}
-                  style={{
-                    display: 'inline-block',
-                    backgroundColor: '#f3f4f6',
-                    color: '#374151',
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    fontSize: '11px',
-                    fontWeight: '500',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {s}
-                </span>
-              ))}
-            </div>
+            <p style={{ color: '#374151', margin: 0, lineHeight: '1.7', fontSize: '12px' }}>
+              {resume.skills.filter(Boolean).join(' · ')}
+            </p>
           </SidebarBlock>
         )}
 
