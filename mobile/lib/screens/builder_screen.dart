@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -8,7 +9,6 @@ import '../state/resume_provider.dart';
 import '../theme.dart';
 import '../widgets/enhance_dialog.dart';
 import '../widgets/forms.dart';
-import '../widgets/jobs_panel.dart';
 import '../widgets/payment_dialog.dart';
 import '../widgets/preview_widget.dart';
 
@@ -29,11 +29,9 @@ class _BuilderScreenState extends State<BuilderScreen>
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 3, vsync: this);
+    _tabs = TabController(length: 2, vsync: this);
     _api = ResumeApi();
     _billing = BillingService(_api);
-    // Best-effort load of the in-app product so the price renders in the
-    // payment dialog. Silent if Play Services isn't available (emulator).
     _billing.load();
   }
 
@@ -44,12 +42,11 @@ class _BuilderScreenState extends State<BuilderScreen>
     super.dispose();
   }
 
-  /// Entry point for every "Download" tap in the app. Routes through the
-  /// Google Play paywall if the resume has been AI-enhanced and not paid
-  /// for yet. Otherwise the system Share/Save sheet opens directly.
   Future<void> _download() async {
     final provider = context.read<ResumeProvider>();
-    final mustPay = provider.aiEnhanced && !provider.hasPaidForAi;
+
+    // In debug/test mode, skip payment entirely.
+    final mustPay = !kDebugMode && provider.aiEnhanced && !provider.hasPaidForAi;
 
     if (mustPay) {
       final paid = await showDialog<bool>(
@@ -108,85 +105,92 @@ class _BuilderScreenState extends State<BuilderScreen>
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ResumeProvider>();
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(children: [
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: AppColors.brand.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: const Center(
-              child: Text('R',
-                  style: TextStyle(
-                      color: AppColors.brand, fontWeight: FontWeight.bold)),
+    // Show FAB only on Edit tab so it never overlaps the download bar.
+    final onEditTab = _tabs.index == 0;
+
+    return ListenableBuilder(
+      listenable: _tabs,
+      builder: (context, _) {
+        final isEditTab = _tabs.index == 0;
+        return Scaffold(
+          appBar: AppBar(
+            title: Row(children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: AppColors.brand.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Center(
+                  child: Text('R',
+                      style: TextStyle(
+                          color: AppColors.brand, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Resume Forge AI',
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  Text('Build · Enhance · Apply',
+                      style:
+                          TextStyle(fontSize: 10, color: AppColors.inkMuted)),
+                ],
+              ),
+            ]),
+            actions: [
+              IconButton(
+                tooltip: 'Reset',
+                icon: const Icon(Icons.refresh, color: AppColors.inkMuted),
+                onPressed: _confirmReset,
+              ),
+              IconButton(
+                tooltip: 'Download PDF',
+                icon: _exporting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: AppColors.ink),
+                      )
+                    : const Icon(Icons.ios_share, color: AppColors.ink),
+                onPressed: _exporting ? null : _download,
+              ),
+            ],
+            bottom: TabBar(
+              controller: _tabs,
+              labelColor: AppColors.brand,
+              unselectedLabelColor: AppColors.inkMuted,
+              indicatorColor: AppColors.brand,
+              tabs: const [
+                Tab(icon: Icon(Icons.edit_note, size: 20), text: 'Edit'),
+                Tab(icon: Icon(Icons.preview, size: 20), text: 'Preview'),
+              ],
             ),
           ),
-          const SizedBox(width: 10),
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+          // Show Enhance FAB only on Edit tab so it never covers the download bar.
+          floatingActionButton: isEditTab
+              ? FloatingActionButton.extended(
+                  onPressed: _enhance,
+                  icon: const Icon(Icons.auto_awesome),
+                  label: const Text('Enhance Resume using AI'),
+                  backgroundColor: AppColors.brand,
+                  foregroundColor: Colors.white,
+                )
+              : null,
+          body: TabBarView(
+            controller: _tabs,
             children: [
-              Text('Resume Forge AI',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-              Text('Build · Enhance · Apply',
-                  style: TextStyle(fontSize: 10, color: AppColors.inkMuted)),
+              _editTab(),
+              _previewTab(provider),
             ],
           ),
-        ]),
-        actions: [
-          IconButton(
-            tooltip: 'Reset',
-            icon: const Icon(Icons.refresh, color: AppColors.inkMuted),
-            onPressed: _confirmReset,
-          ),
-          IconButton(
-            tooltip: provider.aiEnhanced && !provider.hasPaidForAi
-                ? 'Download (paid for AI version)'
-                : 'Download',
-            icon: _exporting
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: AppColors.ink),
-                  )
-                : const Icon(Icons.ios_share, color: AppColors.ink),
-            onPressed: _exporting ? null : _download,
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabs,
-          labelColor: AppColors.brand,
-          unselectedLabelColor: AppColors.inkMuted,
-          indicatorColor: AppColors.brand,
-          tabs: const [
-            Tab(icon: Icon(Icons.edit_note, size: 20), text: 'Edit'),
-            Tab(icon: Icon(Icons.preview, size: 20), text: 'Preview'),
-            Tab(icon: Icon(Icons.work_outline, size: 20), text: 'Jobs'),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _enhance,
-        icon: const Icon(Icons.auto_awesome),
-        label: const Text('Enhance Resume using AI'),
-        backgroundColor: AppColors.brand,
-        foregroundColor: Colors.white,
-      ),
-      body: TabBarView(
-        controller: _tabs,
-        children: [
-          _editTab(),
-          _previewTab(provider),
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(12),
-            child: JobsPanel(api: _api),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -201,7 +205,7 @@ class _BuilderScreenState extends State<BuilderScreen>
         EducationForm(),
         ProjectsForm(),
         LanguagesForm(),
-        SizedBox(height: 80), // breathing room for FAB
+        SizedBox(height: 80),
       ],
     );
   }
@@ -218,7 +222,7 @@ class _BuilderScreenState extends State<BuilderScreen>
             child: _DownloadBar(
               busy: _exporting,
               aiEnhanced: provider.aiEnhanced,
-              paid: provider.hasPaidForAi,
+              paid: provider.hasPaidForAi || kDebugMode,
               price: _billing.product?.price ?? '₹29',
               onPressed: _exporting ? null : _download,
             ),
@@ -263,7 +267,17 @@ class _DownloadBar extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (aiEnhanced)
+            if (aiEnhanced && kDebugMode)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Row(children: [
+                  Icon(Icons.bug_report, size: 14, color: AppColors.inkMuted),
+                  SizedBox(width: 6),
+                  Text('Debug mode — payment skipped',
+                      style: TextStyle(fontSize: 11, color: AppColors.inkMuted)),
+                ]),
+              )
+            else if (aiEnhanced)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(children: [

@@ -348,10 +348,10 @@ pw.Widget _modern(ResumeData r, PdfColor accent) {
 }
 
 List<pw.Widget> _modernBlocks(ResumeData r, PdfColor accent) {
-  final tint = PdfColor(accent.red, accent.green, accent.blue, 0.04);
+  const headerBg = PdfColors.grey100;
   final sections = <pw.Widget>[
     pw.Container(
-      color: tint,
+      color: headerBg,
       padding: const pw.EdgeInsets.fromLTRB(28, 24, 28, 18),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
