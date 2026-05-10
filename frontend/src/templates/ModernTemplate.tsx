@@ -29,9 +29,9 @@ export default function ModernTemplate({ resume, accent }: Props) {
           <div
             style={{
               width: '56px',
-              height: '5px',
+              height: '3px',
               borderRadius: '999px',
-              backgroundColor: accent,
+              backgroundColor: '#d1d5db',
               marginBottom: '10px',
             }}
           />
@@ -96,8 +96,8 @@ export default function ModernTemplate({ resume, accent }: Props) {
                   key={i}
                   style={{
                     display: 'inline-block',
-                    backgroundColor: hexToRgba(accent, 0.15),
-                    color: '#1f2937',
+                    backgroundColor: '#f3f4f6',
+                    color: '#374151',
                     padding: '2px 8px',
                     borderRadius: '4px',
                     fontSize: '11px',
