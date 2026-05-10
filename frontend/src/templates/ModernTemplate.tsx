@@ -6,8 +6,16 @@ interface Props {
   accent: string;
 }
 
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export default function ModernTemplate({ resume, accent }: Props) {
-  const sidebarBg = `${accent}15`;
+  const sidebarBg = hexToRgba(accent, 0.08);
   return (
     <div className="resume-page font-sans grid grid-cols-[34%_66%] text-[13px]">
       <aside className="p-8" style={{ backgroundColor: sidebarBg }}>
@@ -16,7 +24,7 @@ export default function ModernTemplate({ resume, accent }: Props) {
             className="w-16 h-1.5 rounded-full mb-3"
             style={{ backgroundColor: accent }}
           />
-          <h1 className="text-2xl font-bold text-gray-900 leading-tight">
+          <h1 className="text-2xl font-bold leading-tight" style={{ color: '#111827' }}>
             {resume.name || 'Your Name'}
           </h1>
           {resume.title && (
@@ -42,7 +50,7 @@ export default function ModernTemplate({ resume, accent }: Props) {
                 <span
                   key={i}
                   className="px-2 py-0.5 rounded text-[11px] font-medium"
-                  style={{ backgroundColor: `${accent}26`, color: '#1f2937' }}
+                  style={{ backgroundColor: hexToRgba(accent, 0.15), color: '#1f2937' }}
                 >
                   {s}
                 </span>
