@@ -20,11 +20,11 @@ pw.Document buildResumePdf(ResumeData resume) {
 List<pw.Widget> _dispatchWidgets(ResumeData r, PdfColor accent) {
   switch (r.template) {
     case TemplateId.classic:
-      return [_classic(r, accent)];
+      return _classicBlocks(r, accent);
     case TemplateId.modern:
       return _modernBlocks(r, accent);
     case TemplateId.minimal:
-      return [_minimal(r, accent)];
+      return _minimalBlocks(r, accent);
   }
 }
 
@@ -59,89 +59,74 @@ String _safeText(String s) => s.replaceAll('–', '-').replaceAll('—', '-');
 
 // ---- Classic ---------------------------------------------------------------
 
-pw.Widget _classic(ResumeData r, PdfColor accent) {
-  return pw.Padding(
-    padding: const pw.EdgeInsets.fromLTRB(48, 44, 48, 44),
-    child: pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-      children: [
-        pw.Center(
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.center,
-            children: [
-              pw.Text(
-                r.name.isNotEmpty ? r.name : 'Your Name',
-                style: pw.TextStyle(
-                  fontSize: 22,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.grey900,
+List<pw.Widget> _classicBlocks(ResumeData r, PdfColor accent) {
+  const h = pw.EdgeInsets.fromLTRB(48, 0, 48, 0);
+
+  final blocks = <pw.Widget>[
+    pw.Padding(
+      padding: const pw.EdgeInsets.fromLTRB(48, 44, 48, 0),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+        children: [
+          pw.Center(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
+              children: [
+                pw.Text(
+                  _safeText(r.name.isNotEmpty ? r.name : 'Your Name'),
+                  style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900),
                 ),
-              ),
-              if (r.title.isNotEmpty)
-                pw.Padding(
-                  padding: const pw.EdgeInsets.only(top: 2),
-                  child: pw.Text(
-                    r.title.toUpperCase(),
-                    style: const pw.TextStyle(
-                      fontSize: 10,
-                      letterSpacing: 2,
-                      color: PdfColors.grey700,
+                if (r.title.isNotEmpty)
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.only(top: 2),
+                    child: pw.Text(
+                      _safeText(r.title).toUpperCase(),
+                      style: const pw.TextStyle(fontSize: 10, letterSpacing: 2, color: PdfColors.grey700),
                     ),
                   ),
-                ),
-              pw.SizedBox(height: 6),
-              _row([r.email, r.phone, r.location, r.linkedin]),
-            ],
+                pw.SizedBox(height: 6),
+                _row([r.email, r.phone, r.location, r.linkedin]),
+              ],
+            ),
           ),
-        ),
-        pw.SizedBox(height: 6),
-        pw.Container(height: 2, color: accent),
-        pw.SizedBox(height: 14),
-        if (r.summary.isNotEmpty) _classicSection('Summary', accent, [_h(r.summary)]),
-        if (r.experience.isNotEmpty)
-          _classicSection(
-            'Experience',
-            accent,
-            r.experience
-                .map((e) => _experienceRow(e.role, e.company, e.duration, e.description))
-                .toList(),
-          ),
-        if (r.skills.isNotEmpty)
-          _classicSection(
-            'Skills',
-            accent,
-            [_h(r.skills.where((s) => s.trim().isNotEmpty).join(' · '))],
-          ),
-        if (r.education.isNotEmpty)
-          _classicSection(
-            'Education',
-            accent,
-            r.education
-                .map((e) => _experienceRow(e.degree, e.institution, e.duration, e.description))
-                .toList(),
-          ),
-        if (r.projects.isNotEmpty)
-          _classicSection(
-            'Projects',
-            accent,
-            r.projects
-                .map((p) => _experienceRow(p.name, p.link, '', p.description))
-                .toList(),
-          ),
-        if (r.languages.isNotEmpty)
-          _classicSection(
-            'Languages',
-            accent,
-            [_h(r.languages.where((l) => l.trim().isNotEmpty).join(' · '))],
-          ),
-      ],
+          pw.SizedBox(height: 6),
+          pw.Container(height: 2, color: accent),
+        ],
+      ),
     ),
-  );
+  ];
+
+  void addSection(String title, List<pw.Widget> children) {
+    blocks.add(pw.Padding(
+      padding: h,
+      child: _classicSection(title, accent, children),
+    ));
+  }
+
+  if (r.summary.isNotEmpty) addSection('Summary', [_h(r.summary)]);
+  if (r.experience.isNotEmpty)
+    addSection('Experience',
+        r.experience.map((e) => _experienceRow(e.role, e.company, e.duration, e.description)).toList());
+  if (r.skills.isNotEmpty)
+    addSection('Skills', [_h(r.skills.where((s) => s.trim().isNotEmpty).join(' · '))]);
+  if (r.education.isNotEmpty)
+    addSection('Education',
+        r.education.map((e) => _experienceRow(e.degree, e.institution, e.duration, e.description)).toList());
+  if (r.projects.isNotEmpty)
+    addSection('Projects',
+        r.projects.map((p) => _experienceRow(p.name, p.link, '', p.description)).toList());
+  if (r.languages.isNotEmpty)
+    addSection('Languages', [_h(r.languages.where((l) => l.trim().isNotEmpty).join(' · '))]);
+
+  // bottom margin on the last block
+  blocks.add(pw.SizedBox(height: 44));
+
+  return blocks;
 }
 
 pw.Widget _classicSection(String title, PdfColor accent, List<pw.Widget> children) {
   return pw.Padding(
-    padding: const pw.EdgeInsets.only(bottom: 14),
+    padding: const pw.EdgeInsets.only(top: 14, bottom: 14),
     child: pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.stretch,
       children: [
@@ -483,72 +468,65 @@ pw.Widget _modernSection(String text, PdfColor accent) => pw.Padding(
 
 // ---- Minimal (timeline) ----------------------------------------------------
 
-pw.Widget _minimal(ResumeData r, PdfColor accent) {
-  return pw.Padding(
-    padding: const pw.EdgeInsets.fromLTRB(48, 50, 48, 50),
-    child: pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-      children: [
-        pw.Text(
-          r.name.isNotEmpty ? r.name : 'Your Name',
-          style: pw.TextStyle(
-            fontSize: 26,
-            fontWeight: pw.FontWeight.normal,
-            color: PdfColors.grey900,
+List<pw.Widget> _minimalBlocks(ResumeData r, PdfColor accent) {
+  const h = pw.EdgeInsets.fromLTRB(48, 0, 48, 0);
+
+  final blocks = <pw.Widget>[
+    pw.Padding(
+      padding: const pw.EdgeInsets.fromLTRB(48, 50, 48, 0),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+        children: [
+          pw.Text(
+            _safeText(r.name.isNotEmpty ? r.name : 'Your Name'),
+            style: pw.TextStyle(fontSize: 26, fontWeight: pw.FontWeight.normal, color: PdfColors.grey900),
           ),
-        ),
-        if (r.title.isNotEmpty)
-          pw.Padding(
-            padding: const pw.EdgeInsets.only(top: 2),
-            child: pw.Text(r.title,
-                style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700)),
-          ),
-        pw.SizedBox(height: 8),
-        _row([r.email, r.phone, r.location, r.linkedin]),
-        pw.SizedBox(height: 16),
-        if (r.summary.isNotEmpty) _minimalSection('About', accent, _h(r.summary)),
-        if (r.experience.isNotEmpty)
-          _minimalSection(
-            'Experience',
-            accent,
-            pw.Column(
-              children: r.experience
-                  .map((e) => _minimalTimeline(e.duration, e.role, e.company, e.description))
-                  .toList(),
+          if (r.title.isNotEmpty)
+            pw.Padding(
+              padding: const pw.EdgeInsets.only(top: 2),
+              child: pw.Text(_safeText(r.title),
+                  style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700)),
             ),
-          ),
-        if (r.education.isNotEmpty)
-          _minimalSection(
-            'Education',
-            accent,
-            pw.Column(
-              children: r.education
-                  .map((e) => _minimalTimeline(e.duration, e.degree, e.institution, e.description))
-                  .toList(),
-            ),
-          ),
-        if (r.skills.isNotEmpty)
-          _minimalSection('Skills', accent, _h(r.skills.join(' / '))),
-        if (r.projects.isNotEmpty)
-          _minimalSection(
-            'Projects',
-            accent,
-            pw.Column(
-              children: r.projects
-                  .map((p) => _minimalTimeline('', p.name, p.link, p.description))
-                  .toList(),
-            ),
-          ),
-        if (r.languages.isNotEmpty)
-          _minimalSection('Languages', accent, _h(r.languages.join(' / '))),
-      ],
+          pw.SizedBox(height: 8),
+          _row([r.email, r.phone, r.location, r.linkedin]),
+        ],
+      ),
     ),
-  );
+  ];
+
+  void addSection(String title, pw.Widget child) {
+    blocks.add(pw.Padding(
+      padding: h,
+      child: _minimalSection(title, accent, child),
+    ));
+  }
+
+  if (r.summary.isNotEmpty) addSection('About', _h(r.summary));
+  if (r.experience.isNotEmpty)
+    addSection('Experience', pw.Column(
+      children: r.experience.map((e) => _minimalTimeline(e.duration, e.role, e.company, e.description)).toList(),
+    ));
+  if (r.education.isNotEmpty)
+    addSection('Education', pw.Column(
+      children: r.education.map((e) => _minimalTimeline(e.duration, e.degree, e.institution, e.description)).toList(),
+    ));
+  if (r.skills.isNotEmpty)
+    addSection('Skills', _h(r.skills.where((s) => s.trim().isNotEmpty).join(' / ')));
+  if (r.projects.isNotEmpty)
+    addSection('Projects', pw.Column(
+      children: r.projects.map((p) => _minimalTimeline('', p.name, p.link, p.description)).toList(),
+    ));
+  if (r.languages.isNotEmpty)
+    addSection('Languages', _h(r.languages.where((l) => l.trim().isNotEmpty).join(' / ')));
+
+  blocks.add(pw.SizedBox(height: 50));
+
+  return blocks;
 }
 
 pw.Widget _minimalSection(String title, PdfColor accent, pw.Widget child) {
   return pw.Padding(
-    padding: const pw.EdgeInsets.only(bottom: 16),
+    padding: const pw.EdgeInsets.only(top: 16, bottom: 16),
     child: pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.stretch,
       children: [
