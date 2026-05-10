@@ -9,12 +9,14 @@ import LanguagesForm from '../components/LanguagesForm';
 import ResumePreview from '../components/ResumePreview';
 import CustomizationPanel from '../components/CustomizationPanel';
 import ImproveModal from '../components/ImproveModal';
+import DownloadPaywallModal from '../components/DownloadPaywallModal';
 import JobMatches from '../components/JobMatches';
 import { useResumeStore } from '../store/resumeStore';
 import { exportElementAsPdf } from '../utils/pdfExport';
 
 export default function BuilderPage() {
   const [improveOpen, setImproveOpen] = useState(false);
+  const [downloadPaywallOpen, setDownloadPaywallOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const reset = useResumeStore((s) => s.reset);
@@ -49,7 +51,7 @@ export default function BuilderPage() {
     <div className="min-h-screen flex flex-col">
       <TopBar
         onImprove={() => setImproveOpen(true)}
-        onDownload={handleDownload}
+        onDownload={() => setDownloadPaywallOpen(true)}
         onReset={handleReset}
         isExporting={exporting}
       />
@@ -79,6 +81,11 @@ export default function BuilderPage() {
       </main>
 
       <ImproveModal open={improveOpen} onClose={() => setImproveOpen(false)} />
+      <DownloadPaywallModal
+        open={downloadPaywallOpen}
+        onClose={() => setDownloadPaywallOpen(false)}
+        onVerified={handleDownload}
+      />
     </div>
   );
 }

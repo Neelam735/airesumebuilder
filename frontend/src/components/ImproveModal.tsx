@@ -1,59 +1,143 @@
+import { useRef, useState } from 'react';
+import { useResumeStore } from '../store/resumeStore';
+import { api } from '../utils/api';
+import { extractTextFromPdf } from '../utils/pdfExtract';
+import { mergeAiResume } from '../utils/applyAiResume';
+
 interface Props {
   open: boolean;
   onClose: () => void;
 }
 
+type Phase = 'idle' | 'parsing' | 'done' | 'error';
+
 export default function ImproveModal({ open, onClose }: Props) {
+  const [file, setFile] = useState<File | null>(null);
+  const [text, setText] = useState('');
+  const [phase, setPhase] = useState<Phase>('idle');
+  const [error, setError] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
+  const resume = useResumeStore((s) => s.resume);
+  const setResume = useResumeStore((s) => s.setResume);
+
   if (!open) return null;
+
+  const handleClose = () => {
+    setFile(null);
+    setText('');
+    setPhase('idle');
+    setError('');
+    onClose();
+  };
+
+  const handleImprove = async () => {
+    setPhase('parsing');
+    setError('');
+    try {
+      let resumeText = text.trim();
+      if (file) {
+        resumeText = await extractTextFromPdf(file);
+      }
+      if (!resumeText) {
+        setError('Please upload a PDF or paste your resume text.');
+        setPhase('idle');
+        return;
+      }
+      const result = await api.parseResume(resumeText);
+      setResume(mergeAiResume(resume, result.resume));
+      setPhase('done');
+    } catch (e: any) {
+      setError(e?.message || 'Something went wrong. Please try again.');
+      setPhase('error');
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
       <div className="card w-full max-w-md p-6 relative">
         <button
           type="button"
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-3 right-3 text-ink-muted hover:text-ink"
           aria-label="Close"
         >
           ×
         </button>
 
-        <div className="flex items-center gap-2 mb-1">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand pulse-dot" />
-          <h3 className="text-lg font-semibold">Import &amp; Improve Resume</h3>
-        </div>
-        <p className="text-sm text-ink-muted">
-          AI resume rewrite is available as a paid one-time unlock through
-          Google Play in-app purchase, on the Android app.
-        </p>
-
-        <div className="mt-5 rounded-lg border border-bg-border bg-bg-soft p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-md bg-brand/20 flex items-center justify-center text-brand">
-              📱
+        {phase === 'done' ? (
+          <>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-green-400 text-xl">✓</span>
+              <h3 className="text-lg font-semibold">Resume improved!</h3>
             </div>
-            <div className="text-sm">
-              <div className="font-medium">Get Resume Forge AI on Android</div>
-              <div className="text-[12px] text-ink-muted">
-                Build, improve and auto-apply on your phone.
-              </div>
+            <p className="text-sm text-ink-muted mb-5">
+              AI has parsed and enhanced your resume. Review the changes in the editor.
+            </p>
+            <button type="button" onClick={handleClose} className="btn-primary w-full">
+              View improved resume
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand pulse-dot" />
+              <h3 className="text-lg font-semibold">Import &amp; Improve Resume</h3>
             </div>
-          </div>
-          <ul className="mt-3 text-[12px] text-ink-muted list-disc pl-5 space-y-1">
-            <li>One-time ₹29 unlock via Google Play Billing</li>
-            <li>Same templates and editor as the web app</li>
-            <li>Smart job matching by skills, with AI-tailored cover letters</li>
-          </ul>
-        </div>
+            <p className="text-sm text-ink-muted mb-4">
+              Upload your existing resume PDF or paste the text — AI will parse and enhance it for free.
+            </p>
 
-        <p className="mt-4 text-[11px] text-ink-muted">
-          Everything else on the web app — building, editing, exporting PDF,
-          job matching, and cover-letter drafting — remains free.
-        </p>
+            <div
+              className="border-2 border-dashed border-bg-border rounded-lg p-4 text-center cursor-pointer hover:border-brand/50 transition mb-3"
+              onClick={() => fileRef.current?.click()}
+            >
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".pdf"
+                className="hidden"
+                onChange={(e) => {
+                  setFile(e.target.files?.[0] ?? null);
+                  setText('');
+                }}
+              />
+              {file ? (
+                <p className="text-sm text-ink">{file.name}</p>
+              ) : (
+                <>
+                  <p className="text-sm text-ink-muted">Click to upload PDF</p>
+                  <p className="text-[11px] text-ink-dim mt-1">or paste resume text below</p>
+                </>
+              )}
+            </div>
 
-        <button type="button" onClick={onClose} className="btn-secondary w-full mt-4">
-          Continue editing
-        </button>
+            {!file && (
+              <textarea
+                className="input-base resize-none mb-3"
+                rows={5}
+                placeholder="Paste your resume text here…"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+              />
+            )}
+
+            {phase === 'error' && (
+              <p className="text-sm text-red-400 mb-3">{error}</p>
+            )}
+
+            <button
+              type="button"
+              onClick={handleImprove}
+              disabled={phase === 'parsing' || (!file && !text.trim())}
+              className="btn-primary w-full"
+            >
+              {phase === 'parsing' ? 'Improving…' : '✨ Improve with AI'}
+            </button>
+            <button type="button" onClick={handleClose} className="btn-ghost w-full mt-2">
+              Cancel
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

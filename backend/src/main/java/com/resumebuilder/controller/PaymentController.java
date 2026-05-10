@@ -23,7 +23,7 @@ public class PaymentController {
      * Verifies a Google Play in-app purchase. The mobile client purchases a
      * consumable product via Google Play Billing, receives a {@code productId}
      * and {@code purchaseToken}, and posts them here. On success the server
-     * issues a single-use signed token the client uses to call /resume/parse.
+     * issues a single-use signed token that unlocks PDF download on the client.
      */
     @PostMapping("/verify")
     public ResponseEntity<VerifyPaymentResponse> verify(@RequestBody VerifyPaymentRequest request) {

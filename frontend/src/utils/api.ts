@@ -42,10 +42,13 @@ export interface JobMatchResponse {
 }
 
 export const api = {
-  parseResume: (paymentToken: string, resumeText: string) =>
-    postJSON<{ resume: any; message: string }>('/resume/parse', {
-      paymentToken,
-      resumeText,
+  parseResume: (resumeText: string) =>
+    postJSON<{ resume: any; message: string }>('/resume/parse', { resumeText }),
+
+  verifyPayment: (purchaseToken: string, productId?: string) =>
+    postJSON<{ success: boolean; token: string; message: string }>('/payment/verify', {
+      purchaseToken,
+      ...(productId ? { productId } : {}),
     }),
 
   matchJobs: (payload: {

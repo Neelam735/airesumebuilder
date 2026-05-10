@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Verifies Google Play in-app purchases and issues short-lived signed tokens
- * the client can present to {@code /api/v1/resume/parse}.
+ * that the client uses to unlock PDF download.
  */
 @Service
 public class PaymentService {
