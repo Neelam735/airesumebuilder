@@ -17,8 +17,9 @@ enum _Stage { idle, extracting, improving, filling, done, error }
 /// the next download is paid.
 class EnhanceDialog extends StatefulWidget {
   final ResumeApi api;
+  final VoidCallback? onDone;
 
-  const EnhanceDialog({super.key, required this.api});
+  const EnhanceDialog({super.key, required this.api, this.onDone});
 
   @override
   State<EnhanceDialog> createState() => _EnhanceDialogState();
@@ -184,7 +185,10 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
             ),
             const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                Navigator.of(context).pop();
+                widget.onDone?.call();
+              },
               child: const Text('View enhanced resume'),
             ),
           ],

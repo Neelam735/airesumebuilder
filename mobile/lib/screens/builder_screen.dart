@@ -74,7 +74,10 @@ class _BuilderScreenState extends State<BuilderScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => EnhanceDialog(api: _api),
+      builder: (_) => EnhanceDialog(
+        api: _api,
+        onDone: () => _tabs.animateTo(1),
+      ),
     );
   }
 
@@ -148,19 +151,7 @@ class _BuilderScreenState extends State<BuilderScreen>
                 icon: const Icon(Icons.refresh, color: AppColors.inkMuted),
                 onPressed: _confirmReset,
               ),
-              IconButton(
-                tooltip: 'Download PDF',
-                icon: _exporting
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: AppColors.ink),
-                      )
-                    : const Icon(Icons.ios_share, color: AppColors.ink),
-                onPressed: _exporting ? null : _download,
-              ),
-            ],
+              ],
             bottom: TabBar(
               controller: _tabs,
               labelColor: AppColors.brand,
