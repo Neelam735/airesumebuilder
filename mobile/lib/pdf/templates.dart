@@ -494,37 +494,34 @@ List<pw.Widget> _minimalBlocks(ResumeData r, PdfColor accent) {
     ),
   ];
 
-  void addSection(String title, pw.Widget child) {
+  void addSection(String title, List<pw.Widget> children) {
     blocks.add(pw.Padding(
       padding: h,
-      child: _minimalSection(title, accent, child),
+      child: _minimalSection(title, accent, children),
     ));
   }
 
-  if (r.summary.isNotEmpty) addSection('About', _h(r.summary));
+  if (r.summary.isNotEmpty) addSection('About', [_h(r.summary)]);
   if (r.experience.isNotEmpty)
-    addSection('Experience', pw.Column(
-      children: r.experience.map((e) => _minimalTimeline(e.duration, e.role, e.company, e.description)).toList(),
-    ));
+    addSection('Experience',
+        r.experience.map((e) => _minimalTimeline(e.duration, e.role, e.company, e.description)).toList());
   if (r.education.isNotEmpty)
-    addSection('Education', pw.Column(
-      children: r.education.map((e) => _minimalTimeline(e.duration, e.degree, e.institution, e.description)).toList(),
-    ));
+    addSection('Education',
+        r.education.map((e) => _minimalTimeline(e.duration, e.degree, e.institution, e.description)).toList());
   if (r.skills.isNotEmpty)
-    addSection('Skills', _h(r.skills.where((s) => s.trim().isNotEmpty).join(' / ')));
+    addSection('Skills', [_h(r.skills.where((s) => s.trim().isNotEmpty).join(' / '))]);
   if (r.projects.isNotEmpty)
-    addSection('Projects', pw.Column(
-      children: r.projects.map((p) => _minimalTimeline('', p.name, p.link, p.description)).toList(),
-    ));
+    addSection('Projects',
+        r.projects.map((p) => _minimalTimeline('', p.name, p.link, p.description)).toList());
   if (r.languages.isNotEmpty)
-    addSection('Languages', _h(r.languages.where((l) => l.trim().isNotEmpty).join(' / ')));
+    addSection('Languages', [_h(r.languages.where((l) => l.trim().isNotEmpty).join(' / '))]);
 
   blocks.add(pw.SizedBox(height: 50));
 
   return blocks;
 }
 
-pw.Widget _minimalSection(String title, PdfColor accent, pw.Widget child) {
+pw.Widget _minimalSection(String title, PdfColor accent, List<pw.Widget> children) {
   return pw.Padding(
     padding: const pw.EdgeInsets.only(top: 16, bottom: 16),
     child: pw.Column(
@@ -540,7 +537,7 @@ pw.Widget _minimalSection(String title, PdfColor accent, pw.Widget child) {
           ),
         ),
         pw.SizedBox(height: 8),
-        child,
+        ...children,
       ],
     ),
   );
