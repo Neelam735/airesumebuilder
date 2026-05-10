@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -29,6 +30,35 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
   _Stage _stage = _Stage.idle;
   String? _error;
 
+  // Simulated progress for the Gemini call (0.0 – 1.0).
+  // Ticks every 500 ms, caps at 0.9 until the real response arrives.
+  double _aiProgress = 0.0;
+  Timer? _progressTimer;
+
+  void _startProgressTimer() {
+    _aiProgress = 0.0;
+    _progressTimer?.cancel();
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      if (!mounted) return;
+      setState(() {
+        // Slow logarithmic curve: fast early, crawls toward 90%.
+        _aiProgress = (_aiProgress + (0.9 - _aiProgress) * 0.06).clamp(0.0, 0.9);
+      });
+    });
+  }
+
+  void _stopProgressTimer({bool complete = false}) {
+    _progressTimer?.cancel();
+    _progressTimer = null;
+    if (complete && mounted) setState(() => _aiProgress = 1.0);
+  }
+
+  @override
+  void dispose() {
+    _progressTimer?.cancel();
+    super.dispose();
+  }
+
   Future<void> _pickAndProcess() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -47,11 +77,13 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
     try {
       final text = await PdfExtract.fromFile(File(path));
       setState(() => _stage = _Stage.improving);
+      _startProgressTimer();
 
       final response = await widget.api.parseResume(
         paymentToken: '',
         resumeText: text,
       );
+      _stopProgressTimer(complete: true);
       final improved = (response['resume'] as Map<String, dynamic>?) ?? {};
 
       setState(() => _stage = _Stage.filling);
@@ -63,6 +95,7 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
 
       setState(() => _stage = _Stage.done);
     } catch (e) {
+      _stopProgressTimer();
       setState(() {
         _error = e.toString().replaceFirst('Exception: ', '');
         _stage = _Stage.error;
@@ -265,29 +298,57 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
                       ? AppColors.success.withOpacity(0.06)
                       : Colors.transparent,
             ),
-            child: Row(children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: i < activeIdx
-                      ? AppColors.success
-                      : i == activeIdx
-                          ? AppColors.brand
-                          : AppColors.border,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(steps[i].$1,
-                  style: TextStyle(
-                    color: i == activeIdx
-                        ? AppColors.ink
-                        : i < activeIdx
-                            ? AppColors.success
-                            : AppColors.inkMuted,
-                  )),
-            ]),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: i < activeIdx
+                          ? AppColors.success
+                          : i == activeIdx
+                              ? AppColors.brand
+                              : AppColors.border,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(steps[i].$1,
+                        style: TextStyle(
+                          color: i == activeIdx
+                              ? AppColors.ink
+                              : i < activeIdx
+                                  ? AppColors.success
+                                  : AppColors.inkMuted,
+                        )),
+                  ),
+                  if (i == activeIdx && steps[i].$2 == _Stage.improving)
+                    Text(
+                      '${(_aiProgress * 100).toInt()}%',
+                      style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.brand),
+                    ),
+                ]),
+                if (i == activeIdx && steps[i].$2 == _Stage.improving) ...[
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: _aiProgress,
+                      minHeight: 4,
+                      backgroundColor: AppColors.brand.withOpacity(0.12),
+                      valueColor:
+                          const AlwaysStoppedAnimation<Color>(AppColors.brand),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
       ],
     );
