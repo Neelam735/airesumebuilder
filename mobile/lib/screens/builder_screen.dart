@@ -202,14 +202,12 @@ class _BuilderScreenState extends State<BuilderScreen>
   }
 
   Widget _previewTab(ResumeProvider provider) {
-    return Stack(
+    return Column(
       children: [
-        const ResumePreview(),
-        Positioned(
-          left: 12,
-          right: 12,
-          bottom: 12,
-          child: SafeArea(
+        const Expanded(child: ResumePreview()),
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             child: _DownloadBar(
               busy: _exporting,
               aiEnhanced: provider.aiEnhanced,
