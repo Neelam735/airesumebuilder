@@ -356,14 +356,14 @@ List<pw.Widget> _modernBlocks(ResumeData r, PdfColor accent) {
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Container(width: 48, height: 4, color: accent),
+          pw.Container(width: 48, height: 3, color: PdfColors.grey400),
           pw.SizedBox(height: 10),
           pw.Text(
-            r.name.isNotEmpty ? r.name : 'Your Name',
+            _safeText(r.name.isNotEmpty ? r.name : 'Your Name'),
             style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900),
           ),
           if (r.title.isNotEmpty)
-            pw.Text(r.title, style: pw.TextStyle(fontSize: 11, color: accent, fontWeight: pw.FontWeight.bold)),
+            pw.Text(_safeText(r.title), style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700, fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 14),
           _modernHeading('Contact', accent),
           ...[r.email, r.phone, r.location, r.linkedin].where((e) => e.trim().isNotEmpty).map(
@@ -391,22 +391,29 @@ List<pw.Widget> _modernBlocks(ResumeData r, PdfColor accent) {
     );
   }
 
-  addSection('Skills', r.skills.where((s) => s.trim().isNotEmpty).map((s) => pw.Container(
-    margin: const pw.EdgeInsets.only(right: 4, bottom: 4),
-    padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-    decoration: pw.BoxDecoration(
-      color: PdfColor(accent.red, accent.green, accent.blue, 0.14),
-      borderRadius: pw.BorderRadius.circular(3),
-    ),
-    child: pw.Text(_safeText(s), style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey900)),
-  )).toList(), bottom: 4);
+  if (r.skills.where((s) => s.trim().isNotEmpty).isNotEmpty) {
+    addSection('Skills', [
+      pw.Wrap(
+        spacing: 4,
+        runSpacing: 4,
+        children: r.skills.where((s) => s.trim().isNotEmpty).map((s) => pw.Container(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.grey200,
+            borderRadius: pw.BorderRadius.circular(3),
+          ),
+          child: pw.Text(_safeText(s), style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey800)),
+        )).toList(),
+      ),
+    ], bottom: 4);
+  }
 
   addSection('Education', r.education.map((e) => pw.Padding(
     padding: const pw.EdgeInsets.only(bottom: 6),
     child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
       pw.Text(e.degree, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900)),
       if (e.institution.isNotEmpty) pw.Text(e.institution, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
-      if (e.duration.isNotEmpty) pw.Text(e.duration, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+      if (e.duration.isNotEmpty) pw.Text(_safeText(e.duration), style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
     ]),
   )).toList());
 
@@ -421,9 +428,9 @@ List<pw.Widget> _modernBlocks(ResumeData r, PdfColor accent) {
     child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.stretch, children: [
       pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
         pw.Expanded(child: pw.Text(e.role, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900))),
-        if (e.duration.isNotEmpty) pw.Text(e.duration, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+        if (e.duration.isNotEmpty) pw.Text(_safeText(e.duration), style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
       ]),
-      if (e.company.isNotEmpty) pw.Text(e.company, style: pw.TextStyle(fontSize: 10, fontStyle: pw.FontStyle.italic, color: PdfColors.grey700)),
+      if (e.company.isNotEmpty) pw.Text(_safeText(e.company), style: pw.TextStyle(fontSize: 10, fontStyle: pw.FontStyle.italic, color: PdfColors.grey700)),
       if (e.description.isNotEmpty) pw.Padding(padding: const pw.EdgeInsets.only(top: 2), child: _h(e.description)),
     ]),
   )).toList());
@@ -448,7 +455,7 @@ pw.Widget _modernHeading(String text, PdfColor accent) => pw.Padding(
         style: pw.TextStyle(
           fontSize: 9,
           letterSpacing: 1.5,
-          color: accent,
+          color: PdfColors.grey600,
           fontWeight: pw.FontWeight.bold,
         ),
       ),
@@ -468,7 +475,7 @@ pw.Widget _modernSection(String text, PdfColor accent) => pw.Padding(
               color: accent,
             ),
           ),
-          pw.Container(height: 1.5, color: accent),
+          pw.Container(height: 1, color: PdfColors.grey300),
           pw.SizedBox(height: 6),
         ],
       ),
