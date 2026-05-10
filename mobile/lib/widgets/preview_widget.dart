@@ -9,7 +9,9 @@ import '../theme.dart';
 /// Live resume preview rendered by rasterising the same PDF used for export,
 /// so what you see is exactly what gets shared.
 class ResumePreview extends StatelessWidget {
-  const ResumePreview({super.key});
+  final double bottomPadding;
+
+  const ResumePreview({super.key, this.bottomPadding = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +29,7 @@ class ResumePreview extends StatelessWidget {
         allowPrinting: false,
         allowSharing: false,
         useActions: false,
+        padding: EdgeInsets.only(bottom: bottomPadding),
         loadingWidget: const Center(
           child: Padding(
             padding: EdgeInsets.all(40),
