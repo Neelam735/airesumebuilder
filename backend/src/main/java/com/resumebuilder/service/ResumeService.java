@@ -66,6 +66,8 @@ public class ResumeService {
         this.geminiClient = geminiClient;
     }
 
+    // No payment check here — AI improvement is a free feature.
+    // Payment is only required for PDF download (verified client-side via /payment/verify).
     public ResumeParseResponse parseAndImprove(ResumeParseRequest request) {
         String text = request.getResumeText();
         if (text == null || text.isBlank()) {
