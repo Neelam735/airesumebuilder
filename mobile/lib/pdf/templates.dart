@@ -1,0 +1,582 @@
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+
+import '../models/resume.dart';
+
+pw.Document buildResumePdf(ResumeData resume) {
+  final accent = PdfColor.fromInt(resume.accent);
+  final doc = pw.Document();
+  doc.addPage(
+    pw.MultiPage(
+      pageFormat: PdfPageFormat.a4,
+      margin: const pw.EdgeInsets.all(0),
+      maxPages: 100,
+      build: (ctx) => _dispatchWidgets(resume, accent),
+    ),
+  );
+  return doc;
+}
+
+List<pw.Widget> _dispatchWidgets(ResumeData r, PdfColor accent) {
+  switch (r.template) {
+    case TemplateId.classic:
+      return _classicBlocks(r, accent);
+    case TemplateId.modern:
+      return _modernBlocks(r, accent);
+    case TemplateId.minimal:
+      return _minimalBlocks(r, accent);
+  }
+}
+
+// ---- Shared helpers --------------------------------------------------------
+
+pw.Widget _h(String s, {double size = 11, PdfColor? color, bool bold = false}) =>
+    pw.Text(
+      _safeText(s),
+      style: pw.TextStyle(
+        fontSize: size,
+        color: color ?? PdfColors.grey800,
+        fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
+      ),
+    );
+
+pw.Widget _muted(String s, {double size = 9}) => pw.Text(
+      _safeText(s),
+      style: pw.TextStyle(fontSize: size, color: PdfColors.grey600),
+    );
+
+pw.Widget _row(List<String> items, {String sep = ' · '}) =>
+    pw.Wrap(
+      spacing: 10,
+      runSpacing: 2,
+      children: items
+          .where((e) => e.trim().isNotEmpty)
+          .map((s) => pw.Text(_safeText(s), style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)))
+          .toList(),
+    );
+
+String _safeText(String s) => s.replaceAll('–', '-').replaceAll('—', '-');
+
+// ---- Classic ---------------------------------------------------------------
+
+List<pw.Widget> _classicBlocks(ResumeData r, PdfColor accent) {
+  const h = pw.EdgeInsets.fromLTRB(48, 0, 48, 0);
+
+  final blocks = <pw.Widget>[
+    pw.Padding(
+      padding: const pw.EdgeInsets.fromLTRB(48, 44, 48, 0),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+        children: [
+          pw.Center(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
+              children: [
+                pw.Text(
+                  _safeText(r.name.isNotEmpty ? r.name : 'Your Name'),
+                  style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900),
+                ),
+                if (r.title.isNotEmpty)
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.only(top: 2),
+                    child: pw.Text(
+                      _safeText(r.title).toUpperCase(),
+                      style: const pw.TextStyle(fontSize: 10, letterSpacing: 2, color: PdfColors.grey700),
+                    ),
+                  ),
+                pw.SizedBox(height: 6),
+                _row([r.email, r.phone, r.location, r.linkedin]),
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 6),
+          pw.Container(height: 2, color: accent),
+        ],
+      ),
+    ),
+  ];
+
+  void addSection(String title, List<pw.Widget> children) {
+    blocks.add(pw.Padding(
+      padding: h,
+      child: _classicSection(title, accent, children),
+    ));
+  }
+
+  if (r.summary.isNotEmpty) addSection('Summary', [_h(r.summary)]);
+  if (r.experience.isNotEmpty)
+    addSection('Experience',
+        r.experience.map((e) => _experienceRow(e.role, e.company, e.duration, e.description)).toList());
+  if (r.skills.isNotEmpty)
+    addSection('Skills', [_h(r.skills.where((s) => s.trim().isNotEmpty).join(' · '))]);
+  if (r.education.isNotEmpty)
+    addSection('Education',
+        r.education.map((e) => _experienceRow(e.degree, e.institution, e.duration, e.description)).toList());
+  if (r.projects.isNotEmpty)
+    addSection('Projects',
+        r.projects.map((p) => _experienceRow(p.name, p.link, '', p.description)).toList());
+  if (r.languages.isNotEmpty)
+    addSection('Languages', [_h(r.languages.where((l) => l.trim().isNotEmpty).join(' · '))]);
+
+  // bottom margin on the last block
+  blocks.add(pw.SizedBox(height: 44));
+
+  return blocks;
+}
+
+pw.Widget _classicSection(String title, PdfColor accent, List<pw.Widget> children) {
+  return pw.Padding(
+    padding: const pw.EdgeInsets.only(top: 14, bottom: 14),
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      children: [
+        pw.Text(
+          title.toUpperCase(),
+          style: pw.TextStyle(
+            fontSize: 10,
+            letterSpacing: 2,
+            color: accent,
+            fontWeight: pw.FontWeight.bold,
+          ),
+        ),
+        pw.SizedBox(height: 4),
+        pw.Container(height: 0.5, color: PdfColor.fromInt(accent.toInt() | 0x33000000)),
+        pw.SizedBox(height: 6),
+        ...children,
+      ],
+    ),
+  );
+}
+
+pw.Widget _experienceRow(String left, String right, String duration, String description) {
+  return pw.Padding(
+    padding: const pw.EdgeInsets.only(bottom: 6),
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      children: [
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Expanded(
+              child: pw.RichText(
+                text: pw.TextSpan(children: [
+                  pw.TextSpan(
+                    text: left,
+                    style: pw.TextStyle(
+                      fontSize: 11,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.grey900,
+                    ),
+                  ),
+                  if (right.isNotEmpty)
+                    pw.TextSpan(
+                      text: '  ·  $right',
+                      style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
+                    ),
+                ]),
+              ),
+            ),
+            if (duration.isNotEmpty)
+              pw.Text(duration, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+          ],
+        ),
+        if (description.isNotEmpty)
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(top: 2),
+            child: _h(description),
+          ),
+      ],
+    ),
+  );
+}
+
+// ---- Modern (sidebar) ------------------------------------------------------
+
+pw.Widget _modern(ResumeData r, PdfColor accent) {
+  final tint = PdfColor(accent.red, accent.green, accent.blue, 0.04);
+  return pw.Column(
+    crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+    children: [
+      pw.Container(
+        color: tint,
+        padding: const pw.EdgeInsets.fromLTRB(28, 24, 28, 18),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Container(width: 48, height: 4, color: accent),
+            pw.SizedBox(height: 10),
+            pw.Text(
+              r.name.isNotEmpty ? r.name : 'Your Name',
+              style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900),
+            ),
+            if (r.title.isNotEmpty)
+              pw.Text(r.title, style: pw.TextStyle(fontSize: 11, color: accent, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 14),
+            _modernHeading('Contact', accent),
+            ...[r.email, r.phone, r.location, r.linkedin].where((e) => e.trim().isNotEmpty).map(
+                  (s) => pw.Padding(
+                    padding: const pw.EdgeInsets.only(bottom: 2),
+                    child: pw.Text(s, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey800)),
+                  ),
+                ),
+            if (r.skills.isNotEmpty) ...[
+              pw.SizedBox(height: 6),
+              _muted('${r.skills.where((s) => s.trim().isNotEmpty).length} skills listed', size: 8),
+            ],
+          ],
+        ),
+      ),
+      pw.Padding(
+        padding: const pw.EdgeInsets.fromLTRB(28, 18, 28, 28),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+          children: [
+            if (r.education.isNotEmpty) ...[
+              if (r.skills.isNotEmpty) ...[
+                _modernSection('Skills', accent),
+                pw.Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: r.skills
+                      .where((s) => s.trim().isNotEmpty)
+                      .map(
+                        (s) => pw.Container(
+                          padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: pw.BoxDecoration(
+                            color: PdfColor(accent.red, accent.green, accent.blue, 0.14),
+                            borderRadius: pw.BorderRadius.circular(3),
+                          ),
+                          child: pw.Text(s, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey900)),
+                        ),
+                      )
+                      .toList(),
+                ),
+                pw.SizedBox(height: 8),
+              ],
+              _modernSection('Education', accent),
+              ...r.education.map(
+                (e) => pw.Padding(
+                  padding: const pw.EdgeInsets.only(bottom: 6),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(e.degree, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900)),
+                      if (e.institution.isNotEmpty) pw.Text(e.institution, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                      if (e.duration.isNotEmpty) pw.Text(e.duration, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            if (r.languages.isNotEmpty) ...[
+              _modernSection('Languages', accent),
+              pw.Text(r.languages.join(', '), style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey800)),
+              pw.SizedBox(height: 8),
+            ],
+            if (r.summary.isNotEmpty) ...[
+              _modernSection('Profile', accent),
+              _h(r.summary),
+              pw.SizedBox(height: 12),
+            ],
+            if (r.experience.isNotEmpty) ...[
+              _modernSection('Experience', accent),
+              ...r.experience.map((e) => pw.Padding(
+                    padding: const pw.EdgeInsets.only(bottom: 8),
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                      children: [
+                        pw.Row(
+                          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                          children: [
+                            pw.Expanded(
+                              child: pw.Text(e.role,
+                                  style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900)),
+                            ),
+                            if (e.duration.isNotEmpty) pw.Text(e.duration, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+                          ],
+                        ),
+                        if (e.company.isNotEmpty)
+                          pw.Text(e.company, style: pw.TextStyle(fontSize: 10, fontStyle: pw.FontStyle.italic, color: PdfColors.grey700)),
+                        if (e.description.isNotEmpty)
+                          pw.Padding(padding: const pw.EdgeInsets.only(top: 2), child: _h(e.description)),
+                      ],
+                    ),
+                  )),
+            ],
+            if (r.projects.isNotEmpty) ...[
+              _modernSection('Projects', accent),
+              ...r.projects.map((p) => pw.Padding(
+                    padding: const pw.EdgeInsets.only(bottom: 6),
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Row(
+                          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                          children: [
+                            pw.Expanded(
+                              child: pw.Text(p.name,
+                                  style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900)),
+                            ),
+                            if (p.link.isNotEmpty) pw.Text(p.link, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+                          ],
+                        ),
+                        if (p.description.isNotEmpty) _h(p.description),
+                      ],
+                    ),
+                  )),
+            ],
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+List<pw.Widget> _modernBlocks(ResumeData r, PdfColor accent) {
+  const headerBg = PdfColors.grey100;
+  final sections = <pw.Widget>[
+    pw.Container(
+      color: headerBg,
+      padding: const pw.EdgeInsets.fromLTRB(28, 24, 28, 18),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Container(width: 48, height: 3, color: PdfColors.grey400),
+          pw.SizedBox(height: 10),
+          pw.Text(
+            _safeText(r.name.isNotEmpty ? r.name : 'Your Name'),
+            style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900),
+          ),
+          if (r.title.isNotEmpty)
+            pw.Text(_safeText(r.title), style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 14),
+          _modernHeading('Contact', accent),
+          ...[r.email, r.phone, r.location, r.linkedin].where((e) => e.trim().isNotEmpty).map(
+                (s) => pw.Padding(
+                  padding: const pw.EdgeInsets.only(bottom: 2),
+                  child: pw.Text(_safeText(s), style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey800)),
+                ),
+              ),
+        ],
+      ),
+    ),
+  ];
+
+  void addSection(String title, List<pw.Widget> children, {double bottom = 8}) {
+    if (children.isEmpty) return;
+    sections.add(
+      pw.Padding(
+        padding: const pw.EdgeInsets.fromLTRB(28, 18, 28, 0),
+        child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.stretch, children: [
+          _modernSection(title, accent),
+          ...children,
+          pw.SizedBox(height: bottom),
+        ]),
+      ),
+    );
+  }
+
+  if (r.skills.where((s) => s.trim().isNotEmpty).isNotEmpty) {
+    addSection('Skills', [
+      pw.Wrap(
+        spacing: 4,
+        runSpacing: 4,
+        children: r.skills.where((s) => s.trim().isNotEmpty).map((s) => pw.Container(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.grey200,
+            borderRadius: pw.BorderRadius.circular(3),
+          ),
+          child: pw.Text(_safeText(s), style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey800)),
+        )).toList(),
+      ),
+    ], bottom: 4);
+  }
+
+  addSection('Education', r.education.map((e) => pw.Padding(
+    padding: const pw.EdgeInsets.only(bottom: 6),
+    child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+      pw.Text(e.degree, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900)),
+      if (e.institution.isNotEmpty) pw.Text(e.institution, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+      if (e.duration.isNotEmpty) pw.Text(_safeText(e.duration), style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+    ]),
+  )).toList());
+
+  if (r.languages.isNotEmpty) {
+    addSection('Languages', [
+      pw.Text(r.languages.join(', '), style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey800)),
+    ]);
+  }
+  if (r.summary.isNotEmpty) addSection('Profile', [_h(r.summary)], bottom: 12);
+  addSection('Experience', r.experience.map((e) => pw.Padding(
+    padding: const pw.EdgeInsets.only(bottom: 8),
+    child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.stretch, children: [
+      pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+        pw.Expanded(child: pw.Text(e.role, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900))),
+        if (e.duration.isNotEmpty) pw.Text(_safeText(e.duration), style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+      ]),
+      if (e.company.isNotEmpty) pw.Text(_safeText(e.company), style: pw.TextStyle(fontSize: 10, fontStyle: pw.FontStyle.italic, color: PdfColors.grey700)),
+      if (e.description.isNotEmpty) pw.Padding(padding: const pw.EdgeInsets.only(top: 2), child: _h(e.description)),
+    ]),
+  )).toList());
+  addSection('Projects', r.projects.map((p) => pw.Padding(
+    padding: const pw.EdgeInsets.only(bottom: 6),
+    child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+      pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+        pw.Expanded(child: pw.Text(p.name, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900))),
+        if (p.link.isNotEmpty) pw.Text(p.link, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+      ]),
+      if (p.description.isNotEmpty) _h(p.description),
+    ]),
+  )).toList());
+
+  return sections;
+}
+
+pw.Widget _modernHeading(String text, PdfColor accent) => pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 6),
+      child: pw.Text(
+        text.toUpperCase(),
+        style: pw.TextStyle(
+          fontSize: 9,
+          letterSpacing: 1.5,
+          color: PdfColors.grey600,
+          fontWeight: pw.FontWeight.bold,
+        ),
+      ),
+    );
+
+pw.Widget _modernSection(String text, PdfColor accent) => pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 6),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+        children: [
+          pw.Text(
+            text.toUpperCase(),
+            style: pw.TextStyle(
+              fontSize: 10,
+              letterSpacing: 2,
+              fontWeight: pw.FontWeight.bold,
+              color: accent,
+            ),
+          ),
+          pw.Container(height: 1, color: PdfColors.grey300),
+          pw.SizedBox(height: 6),
+        ],
+      ),
+    );
+
+// ---- Minimal (timeline) ----------------------------------------------------
+
+List<pw.Widget> _minimalBlocks(ResumeData r, PdfColor accent) {
+  const h = pw.EdgeInsets.fromLTRB(48, 0, 48, 0);
+
+  final blocks = <pw.Widget>[
+    pw.Padding(
+      padding: const pw.EdgeInsets.fromLTRB(48, 50, 48, 0),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+        children: [
+          pw.Text(
+            _safeText(r.name.isNotEmpty ? r.name : 'Your Name'),
+            style: pw.TextStyle(fontSize: 26, fontWeight: pw.FontWeight.normal, color: PdfColors.grey900),
+          ),
+          if (r.title.isNotEmpty)
+            pw.Padding(
+              padding: const pw.EdgeInsets.only(top: 2),
+              child: pw.Text(_safeText(r.title),
+                  style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700)),
+            ),
+          pw.SizedBox(height: 8),
+          _row([r.email, r.phone, r.location, r.linkedin]),
+        ],
+      ),
+    ),
+  ];
+
+  void addSection(String title, List<pw.Widget> children) {
+    blocks.add(pw.Padding(
+      padding: h,
+      child: _minimalSection(title, accent, children),
+    ));
+  }
+
+  if (r.summary.isNotEmpty) addSection('About', [_h(r.summary)]);
+  if (r.experience.isNotEmpty)
+    addSection('Experience',
+        r.experience.map((e) => _minimalTimeline(e.duration, e.role, e.company, e.description)).toList());
+  if (r.education.isNotEmpty)
+    addSection('Education',
+        r.education.map((e) => _minimalTimeline(e.duration, e.degree, e.institution, e.description)).toList());
+  if (r.skills.isNotEmpty)
+    addSection('Skills', [_h(r.skills.where((s) => s.trim().isNotEmpty).join(' / '))]);
+  if (r.projects.isNotEmpty)
+    addSection('Projects',
+        r.projects.map((p) => _minimalTimeline('', p.name, p.link, p.description)).toList());
+  if (r.languages.isNotEmpty)
+    addSection('Languages', [_h(r.languages.where((l) => l.trim().isNotEmpty).join(' / '))]);
+
+  blocks.add(pw.SizedBox(height: 50));
+
+  return blocks;
+}
+
+pw.Widget _minimalSection(String title, PdfColor accent, List<pw.Widget> children) {
+  return pw.Padding(
+    padding: const pw.EdgeInsets.only(top: 16, bottom: 16),
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      children: [
+        pw.Text(
+          title.toUpperCase(),
+          style: pw.TextStyle(
+            fontSize: 9,
+            letterSpacing: 3,
+            color: accent,
+            fontWeight: pw.FontWeight.bold,
+          ),
+        ),
+        pw.SizedBox(height: 8),
+        ...children,
+      ],
+    ),
+  );
+}
+
+pw.Widget _minimalTimeline(String left, String title, String sub, String body) {
+  return pw.Padding(
+    padding: const pw.EdgeInsets.only(bottom: 8),
+    child: pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.SizedBox(
+          width: 90,
+          child: pw.Text(left,
+              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+        ),
+        pw.SizedBox(width: 12),
+        pw.Expanded(
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(title,
+                  style: pw.TextStyle(
+                      fontSize: 11,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.grey900)),
+              if (sub.isNotEmpty)
+                pw.Text(sub,
+                    style: const pw.TextStyle(
+                        fontSize: 10, color: PdfColors.grey700)),
+              if (body.isNotEmpty)
+                pw.Padding(
+                  padding: const pw.EdgeInsets.only(top: 2),
+                  child: _h(body),
+                ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
