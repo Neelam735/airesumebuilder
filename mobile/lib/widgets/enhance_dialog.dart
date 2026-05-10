@@ -61,14 +61,29 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
 
   Future<void> _pickAndProcess() async {
     final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: const ['pdf'],
+      type: FileType.any,
       allowMultiple: false,
       withData: false,
     );
     if (result == null || result.files.isEmpty) return;
-    final path = result.files.single.path;
+    final file = result.files.single;
+    final path = file.path;
     if (path == null) return;
+
+    // Validate extension after picking so all file-name formats are supported.
+    final name = file.name;
+    if (!name.toLowerCase().endsWith('.pdf')) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '"$name" is not a PDF. Please rename it so it ends in .pdf and try again.',
+          ),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+      return;
+    }
 
     setState(() {
       _stage = _Stage.extracting;
@@ -96,8 +111,13 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
       setState(() => _stage = _Stage.done);
     } catch (e) {
       _stopProgressTimer();
+      var msg = e.toString().replaceFirst('Exception: ', '');
+      if (msg.contains('Could not extract any text')) {
+        msg = 'No text found in this PDF. '
+            'It may be a scanned image — please use a text-based PDF.';
+      }
       setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
+        _error = msg;
         _stage = _Stage.error;
       });
     }
