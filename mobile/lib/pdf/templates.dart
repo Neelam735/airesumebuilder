@@ -17,20 +17,18 @@ pw.Document buildResumePdf(ResumeData resume) {
           pageFormat: PdfPageFormat.a4,
           // Paint sidebar background on every page via low-level canvas so it
           // never bleeds into the right column regardless of content height.
-          buildBackground: (ctx) => [
-            pw.FullPage(
-              ignoreMargins: true,
-              child: pw.CustomPaint(
-                size: PdfPoint(PdfPageFormat.a4.width, PdfPageFormat.a4.height),
-                painter: (canvas, size) {
-                  canvas
-                    ..setFillColor(tint)
-                    ..drawRect(0, 0, size.x * 0.34, size.y)
-                    ..fillPath();
-                },
-              ),
+          buildBackground: (ctx) => pw.FullPage(
+            ignoreMargins: true,
+            child: pw.CustomPaint(
+              size: PdfPoint(PdfPageFormat.a4.width, PdfPageFormat.a4.height),
+              painter: (canvas, size) {
+                canvas
+                  ..setFillColor(tint)
+                  ..drawRect(0, 0, size.x * 0.34, size.y)
+                  ..fillPath();
+              },
             ),
-          ],
+          ),
         ),
         build: (ctx) => [_modern(resume, accent)],
       ),

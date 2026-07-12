@@ -30,14 +30,15 @@ dependencies:
   # PDF text extraction (community-licensed)
   syncfusion_flutter_pdf: ^33.2.4
 
-  # File picking
+  # File picking (8.x exposes the FilePicker.platform.pickFiles API used here;
+  # 11.x removed that accessor)
+  file_picker: ^8.1.6
 
   # Open URLs (for "Apply with AI" → job listing)
   url_launcher: ^6.2.6
 
   # Useful UX bits
   flutter_markdown: ^0.7.1
-  file_picker: ^11.0.2
 
 dev_dependencies:
   flutter_test:
