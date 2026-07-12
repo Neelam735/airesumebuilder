@@ -6,13 +6,44 @@ import '../models/resume.dart';
 pw.Document buildResumePdf(ResumeData resume) {
   final accent = PdfColor.fromInt(resume.accent);
   final doc = pw.Document();
-  doc.addPage(
-    pw.MultiPage(
-      pageFormat: PdfPageFormat.a4,
-      margin: const pw.EdgeInsets.all(0),
-      build: (ctx) => [_dispatch(resume, accent)],
-    ),
-  );
+
+  if (resume.template == TemplateId.modern) {
+    final tint = PdfColor(accent.red, accent.green, accent.blue, 0.08);
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(0),
+        pageTheme: pw.PageTheme(
+          pageFormat: PdfPageFormat.a4,
+          // Paint sidebar background on every page via low-level canvas so it
+          // never bleeds into the right column regardless of content height.
+          buildBackground: (ctx) => [
+            pw.FullPage(
+              ignoreMargins: true,
+              child: pw.CustomPaint(
+                size: PdfPoint(PdfPageFormat.a4.width, PdfPageFormat.a4.height),
+                painter: (canvas, size) {
+                  canvas
+                    ..setFillColor(tint)
+                    ..drawRect(0, 0, size.x * 0.34, size.y)
+                    ..fillPath();
+                },
+              ),
+            ),
+          ],
+        ),
+        build: (ctx) => [_modern(resume, accent)],
+      ),
+    );
+  } else {
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(0),
+        build: (ctx) => [_dispatch(resume, accent)],
+      ),
+    );
+  }
   return doc;
 }
 
@@ -203,16 +234,17 @@ pw.Widget _experienceRow(String left, String right, String duration, String desc
 }
 
 // ---- Modern (sidebar) ------------------------------------------------------
+// The sidebar background is painted by PageTheme.buildBackground (see
+// buildResumePdf) so this function only handles layout and text — no color
+// properties on any container that could bleed across columns.
 
 pw.Widget _modern(ResumeData r, PdfColor accent) {
-  final tint = PdfColor(accent.red, accent.green, accent.blue, 0.08);
   return pw.Row(
     crossAxisAlignment: pw.CrossAxisAlignment.start,
     children: [
       pw.Expanded(
         flex: 34,
-        child: pw.Container(
-          color: tint,
+        child: pw.Padding(
           padding: const pw.EdgeInsets.all(28),
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -250,22 +282,17 @@ pw.Widget _modern(ResumeData r, PdfColor accent) {
               if (r.skills.isNotEmpty) ...[
                 pw.SizedBox(height: 12),
                 _modernHeading('Skills', accent),
-                pw.Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  children: r.skills
-                      .where((s) => s.trim().isNotEmpty)
-                      .map((s) => pw.Container(
-                            padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                            decoration: pw.BoxDecoration(
-                              color: PdfColor(accent.red, accent.green, accent.blue, 0.14),
-                              borderRadius: pw.BorderRadius.circular(3),
-                            ),
-                            child: pw.Text(s,
-                                style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey900)),
-                          ))
-                      .toList(),
-                ),
+                // Bullet list avoids the pw.Container-in-pw.Wrap full-width
+                // expansion issue in the pdf package's layout engine.
+                ...r.skills
+                    .where((s) => s.trim().isNotEmpty)
+                    .map((s) => pw.Padding(
+                          padding: const pw.EdgeInsets.only(bottom: 3),
+                          child: pw.Text(
+                            '• $s',
+                            style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey800),
+                          ),
+                        )),
               ],
               if (r.education.isNotEmpty) ...[
                 pw.SizedBox(height: 12),
