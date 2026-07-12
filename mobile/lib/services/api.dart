@@ -12,19 +12,35 @@ class ApiException implements Exception {
 }
 
 class ResumeApi {
-  /// Set this to your backend's reachable URL.
-  /// On Android emulator, use http://10.0.2.2:8080 to reach localhost on host.
-  /// On a real device, point this at your deployed server.
-  static const String defaultBaseUrl =
-      String.fromEnvironment('API_BASE', defaultValue: 'http://10.0.2.2:8080/api/v1');
+  /// Pass your backend's reachable HOST via --dart-define=API_BASE=...
+  ///   • Android emulator + local backend: http://10.0.2.2:8080
+  ///   • Real device + local backend:      http://<your-PC-LAN-IP>:8080
+  ///   • Deployed (Railway, etc.):          https://your-app.up.railway.app
+  /// The `/api/v1` prefix is added automatically, so it does not matter
+  /// whether you include it in API_BASE or not.
+  static const String _rawBaseUrl =
+      String.fromEnvironment('API_BASE', defaultValue: 'http://10.0.2.2:8080');
 
   final String baseUrl;
-  ResumeApi({this.baseUrl = defaultBaseUrl});
+  ResumeApi({String? baseUrl}) : baseUrl = _normalize(baseUrl ?? _rawBaseUrl);
+
+  /// Strips a trailing slash and a trailing `/api/v1` so we can safely add the
+  /// prefix ourselves. Makes API_BASE tolerant of both forms.
+  static String _normalize(String url) {
+    var u = url.trim();
+    while (u.endsWith('/')) {
+      u = u.substring(0, u.length - 1);
+    }
+    if (u.endsWith('/api/v1')) {
+      u = u.substring(0, u.length - '/api/v1'.length);
+    }
+    return u;
+  }
 
   Future<Map<String, dynamic>> _post(String path, Map<String, dynamic> body) async {
     final res = await http
         .post(
-          Uri.parse('$baseUrl$path'),
+          Uri.parse('$baseUrl/api/v1$path'),
           headers: const {'Content-Type': 'application/json'},
           body: jsonEncode(body),
         )
