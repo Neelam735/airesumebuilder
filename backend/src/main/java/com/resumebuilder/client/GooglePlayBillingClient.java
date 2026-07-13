@@ -98,8 +98,19 @@ public class GooglePlayBillingClient {
         } catch (WebClientResponseException e) {
             String body = e.getResponseBodyAsString();
             log.error("Google Play returned {} body={}", e.getStatusCode(), body);
+            String message = extractErrorMessage(body);
+            int status = e.getStatusCode().value();
+            // 401/403 (or an explicit "insufficient permission") right after a
+            // fresh service-account grant means the permission is still
+            // propagating on Google's side — surface a friendly, retry-able note
+            // instead of the raw API error.
+            if (status == 401 || status == 403
+                    || (message != null && message.toLowerCase().contains("insufficient permission"))) {
+                throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,
+                        "Payment verification is still activating. Please try again in a little while.", e);
+            }
             throw new ApiException(HttpStatus.BAD_REQUEST,
-                    "Purchase verification failed: " + extractErrorMessage(body), e);
+                    "Purchase verification failed: " + message, e);
         } catch (Exception e) {
             log.error("Google Play verification failed", e);
             throw new ApiException(HttpStatus.BAD_GATEWAY,
