@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -27,6 +28,54 @@ class EnhanceDialog extends StatefulWidget {
 class _EnhanceDialogState extends State<EnhanceDialog> {
   _Stage _stage = _Stage.idle;
   String? _error;
+  double _progress = 0; // 0..1 shown as a percentage while enhancing
+  Timer? _ticker;
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  /// Ceiling the bar eases toward for the current stage. The AI step has no
+  /// real byte-progress, so we creep toward 0.9 to signal ongoing work.
+  double get _stageTarget {
+    switch (_stage) {
+      case _Stage.extracting:
+        return 0.25;
+      case _Stage.improving:
+        return 0.90;
+      case _Stage.filling:
+        return 0.97;
+      case _Stage.done:
+        return 1.0;
+      default:
+        return 0.0;
+    }
+  }
+
+  /// Smoothly animate [_progress] toward the current stage's target so the
+  /// percentage always appears to be moving, even during the long AI call.
+  void _startTicker() {
+    _ticker?.cancel();
+    _ticker = Timer.periodic(const Duration(milliseconds: 100), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      setState(() {
+        if (_stage == _Stage.done) {
+          _progress = 1.0;
+          t.cancel();
+        } else if (_stage == _Stage.error) {
+          t.cancel();
+        } else {
+          _progress += (_stageTarget - _progress) * 0.08;
+          if (_progress > 0.985) _progress = 0.985;
+        }
+      });
+    });
+  }
 
   Future<void> _pickAndProcess() async {
     final result = await FilePicker.platform.pickFiles(
@@ -42,7 +91,9 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
     setState(() {
       _stage = _Stage.extracting;
       _error = null;
+      _progress = 0.02;
     });
+    _startTicker();
     try {
       final text = await DocumentExtract.fromFile(File(path));
       setState(() => _stage = _Stage.improving);
@@ -60,8 +111,13 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
       provider.replaceAll(next);
       provider.markAiEnhanced();
 
-      setState(() => _stage = _Stage.done);
+      setState(() {
+        _stage = _Stage.done;
+        _progress = 1.0;
+      });
+      _ticker?.cancel();
     } catch (e) {
+      _ticker?.cancel();
       setState(() {
         _error = e.toString().replaceFirst('Exception: ', '');
         _stage = _Stage.error;
@@ -197,10 +253,14 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
             _banner(_error ?? 'Something went wrong.', AppColors.danger),
             const SizedBox(height: 12),
             OutlinedButton(
-              onPressed: () => setState(() {
-                _error = null;
-                _stage = _Stage.idle;
-              }),
+              onPressed: () {
+                _ticker?.cancel();
+                setState(() {
+                  _error = null;
+                  _stage = _Stage.idle;
+                  _progress = 0;
+                });
+              },
               child: const Text('Try again'),
             ),
           ],
@@ -241,15 +301,18 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
     ];
     final activeIdx = steps.indexWhere((e) => e.$2 == _stage);
     final current = activeIdx >= 0 ? steps[activeIdx].$1 : 'Working';
+    final double pct = _progress.clamp(0.0, 1.0).toDouble();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Indeterminate progress bar so it's clear work is in progress while
-        // the (network) AI enhancement runs.
+        // Determinate progress bar with a live percentage. Real byte-progress
+        // isn't available for the AI call, so the value eases toward each
+        // stage's target (see _startTicker) to always look like it's moving.
         ClipRRect(
           borderRadius: BorderRadius.circular(6),
           child: LinearProgressIndicator(
-            minHeight: 6,
+            value: pct,
+            minHeight: 8,
             backgroundColor: AppColors.brand.withOpacity(0.15),
             valueColor: const AlwaysStoppedAnimation<Color>(AppColors.brand),
           ),
@@ -257,14 +320,18 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
         const SizedBox(height: 8),
         Row(
           children: [
-            Text('$current…',
+            Expanded(
+              child: Text('$current…',
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ink)),
+            ),
+            Text('${(pct * 100).round()}%',
                 style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink)),
-            const Spacer(),
-            Text('${activeIdx + 1}/${steps.length}',
-                style: const TextStyle(fontSize: 11, color: AppColors.inkMuted)),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.brand)),
           ],
         ),
         const SizedBox(height: 10),
