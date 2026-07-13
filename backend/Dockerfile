@@ -28,7 +28,8 @@ ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseG1GC -Djava.security.egd=file:/de
     SERVER_PORT=8080
 EXPOSE 8080
 
+# Use the platform-assigned PORT (Railway/Render set it); fall back to 8080.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:${SERVER_PORT}/api/v1/health || exit 1
+  CMD wget -qO- http://127.0.0.1:${PORT:-${SERVER_PORT:-8080}}/api/v1/health || exit 1
 
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]
