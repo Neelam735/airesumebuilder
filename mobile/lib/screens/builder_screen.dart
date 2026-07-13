@@ -78,12 +78,17 @@ class _BuilderScreenState extends State<BuilderScreen>
     }
   }
 
-  void _enhance() {
-    showDialog(
+  Future<void> _enhance() async {
+    final enhanced = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => EnhanceDialog(api: _api),
     );
+    // On a successful enhancement, jump to the Preview tab so the user can
+    // review and download right away.
+    if (enhanced == true && mounted) {
+      _tabs.animateTo(1);
+    }
   }
 
   Future<void> _confirmReset() async {

@@ -30,11 +30,21 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
   String? _error;
   double _progress = 0; // 0..1 shown as a percentage while enhancing
   Timer? _ticker;
+  Timer? _autoClose;
 
   @override
   void dispose() {
     _ticker?.cancel();
+    _autoClose?.cancel();
     super.dispose();
+  }
+
+  /// Close the dialog, signalling the caller whether enhancement succeeded
+  /// (true → caller switches to the Preview tab).
+  void _close(bool enhanced) {
+    _ticker?.cancel();
+    _autoClose?.cancel();
+    if (mounted) Navigator.of(context).pop(enhanced);
   }
 
   /// Ceiling the bar eases toward for the current stage. The AI step has no
@@ -116,6 +126,8 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
         _progress = 1.0;
       });
       _ticker?.cancel();
+      // Briefly show 100% / success, then auto-advance to the Preview tab.
+      _autoClose = Timer(const Duration(milliseconds: 1100), () => _close(true));
     } catch (e) {
       _ticker?.cancel();
       setState(() {
@@ -201,7 +213,7 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
                             fontSize: 16, fontWeight: FontWeight.w600)),
                   ),
                   IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () => _close(_stage == _Stage.done),
                     icon: const Icon(Icons.close, color: AppColors.inkMuted),
                   ),
                 ],
@@ -235,14 +247,14 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _banner(
-              'Your resume has been enhanced. Preview it on the next tab; '
-              'payment is only needed when you tap Download.',
+              'Your resume has been enhanced. Opening the Preview tab so you '
+              'can download it; payment is only needed when you tap Download.',
               AppColors.success,
             ),
             const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('View enhanced resume'),
+              onPressed: () => _close(true),
+              child: const Text('View & download'),
             ),
           ],
         );
