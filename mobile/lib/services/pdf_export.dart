@@ -7,8 +7,16 @@ import '../pdf/templates.dart';
 
 class PdfExport {
   static Future<Uint8List> render(ResumeData resume) async {
-    final doc = buildResumePdf(resume);
-    return doc.save();
+    try {
+      final doc = buildResumePdf(resume);
+      return await doc.save();
+    } catch (_) {
+      // A styled template failed to lay out (e.g. unusually long/complex
+      // content) — fall back to a plain, always-safe document so the preview
+      // and download never hard-fail.
+      final doc = buildFallbackPdf(resume);
+      return await doc.save();
+    }
   }
 
   /// Show the system "Share / Save / Print" sheet for the rendered PDF.
