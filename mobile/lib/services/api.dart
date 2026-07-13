@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/job.dart';
@@ -38,9 +39,11 @@ class ResumeApi {
   }
 
   Future<Map<String, dynamic>> _post(String path, Map<String, dynamic> body) async {
+    final url = '$baseUrl/api/v1$path';
+    debugPrint('[ResumeApi] POST $url  (baseUrl=$baseUrl)');
     final res = await http
         .post(
-          Uri.parse('$baseUrl/api/v1$path'),
+          Uri.parse(url),
           headers: const {'Content-Type': 'application/json'},
           body: jsonEncode(body),
         )
