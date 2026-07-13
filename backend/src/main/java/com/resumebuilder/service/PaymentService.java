@@ -63,15 +63,19 @@ public class PaymentService {
                     "Purchase is not in PURCHASED state (state=" + purchaseState + ")");
         }
 
-        // consumptionState: 0 = yet to be consumed, 1 = consumed
+        // consumptionState: 0 = yet to be consumed, 1 = consumed.
+        // The Android client buys with autoConsume, so by the time we verify,
+        // the purchase is often already consumed on Google's side. That is still
+        // a legitimate, paid purchase — only consume it ourselves if the client
+        // hasn't already, and never reject solely because it was consumed.
         int consumptionState = purchase.path("consumptionState").asInt(-1);
-        if (consumptionState == 1) {
-            throw new ApiException(HttpStatus.BAD_REQUEST,
-                    "This purchase has already been consumed");
+        if (consumptionState != 1) {
+            // Mark as consumed on Google's side so it can't be reused.
+            billingClient.consumeProductPurchase(productId, purchaseToken);
+        } else {
+            log.info("Purchase already consumed client-side; accepting. token={}",
+                    abbreviate(purchaseToken));
         }
-
-        // Mark as consumed on Google's side so it can't be reused.
-        billingClient.consumeProductPurchase(productId, purchaseToken);
 
         String token = issueToken(productId, purchaseToken);
         return new VerifyPaymentResponse(true, token, "Purchase verified successfully");
