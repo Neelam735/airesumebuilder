@@ -240,9 +240,34 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
       ('Auto-filling form', _Stage.filling),
     ];
     final activeIdx = steps.indexWhere((e) => e.$2 == _stage);
+    final current = activeIdx >= 0 ? steps[activeIdx].$1 : 'Working';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Indeterminate progress bar so it's clear work is in progress while
+        // the (network) AI enhancement runs.
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: LinearProgressIndicator(
+            minHeight: 6,
+            backgroundColor: AppColors.brand.withOpacity(0.15),
+            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.brand),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Text('$current…',
+                style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink)),
+            const Spacer(),
+            Text('${activeIdx + 1}/${steps.length}',
+                style: const TextStyle(fontSize: 11, color: AppColors.inkMuted)),
+          ],
+        ),
+        const SizedBox(height: 10),
         for (var i = 0; i < steps.length; i++)
           Container(
             margin: const EdgeInsets.only(bottom: 8),

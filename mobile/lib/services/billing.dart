@@ -26,6 +26,10 @@ class BillingService {
   StreamSubscription<List<PurchaseDetails>>? _sub;
   ProductDetails? _product;
 
+  /// Human-readable reason the last [load] failed (null on success). Surfaced
+  /// so the payment dialog can explain *why* checkout isn't available.
+  String? lastLoadError;
+
   BillingService(this._api);
 
   ProductDetails? get product => _product;
@@ -37,11 +41,27 @@ class BillingService {
   Future<bool> isAvailable() => _iap.isAvailable();
 
   /// Query Play for the consumable product. Returns true if the product is
-  /// listed and ready.
+  /// listed and ready; sets [lastLoadError] with a precise reason otherwise.
   Future<bool> load() async {
-    if (!await _iap.isAvailable()) return false;
+    lastLoadError = null;
+    if (!await _iap.isAvailable()) {
+      lastLoadError =
+          'Google Play billing is not available on this device/build. Install '
+          'the app from a Play Store testing track (not a raw debug build).';
+      return false;
+    }
     final response = await _iap.queryProductDetails({productId});
-    if (response.error != null || response.productDetails.isEmpty) return false;
+    if (response.error != null) {
+      lastLoadError = 'Play query failed: ${response.error!.message}';
+      return false;
+    }
+    if (response.notFoundIDs.contains(productId) || response.productDetails.isEmpty) {
+      lastLoadError =
+          'Product "$productId" was not found on Play. Create it as an active '
+          'in-app product in Play Console, upload a signed build to a testing '
+          'track, and add your Google account as a licensed tester.';
+      return false;
+    }
     _product = response.productDetails.first;
     return true;
   }
@@ -55,10 +75,9 @@ class BillingService {
     if (_product == null) {
       final ok = await load();
       if (!ok || _product == null) {
-        throw Exception(
-          'Product "$productId" is not available on Play. Verify it is '
-          'active in Play Console and your test account has access.',
-        );
+        throw Exception(lastLoadError ??
+            'Product "$productId" is not available on Play. Verify it is '
+                'active in Play Console and your test account has access.');
       }
     }
 
