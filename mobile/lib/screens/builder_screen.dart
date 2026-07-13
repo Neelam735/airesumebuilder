@@ -8,7 +8,6 @@ import '../state/resume_provider.dart';
 import '../theme.dart';
 import '../widgets/enhance_dialog.dart';
 import '../widgets/forms.dart';
-import '../widgets/jobs_panel.dart';
 import '../widgets/payment_dialog.dart';
 import '../widgets/preview_widget.dart';
 
@@ -25,11 +24,17 @@ class _BuilderScreenState extends State<BuilderScreen>
   late ResumeApi _api;
   late BillingService _billing;
   bool _exporting = false;
+  int _tab = 0;
 
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 3, vsync: this);
+    _tabs = TabController(length: 2, vsync: this);
+    // Track the active tab so we can hide the Enhance FAB on the Preview tab
+    // (where it would otherwise overlap the Download bar).
+    _tabs.addListener(() {
+      if (mounted && _tabs.index != _tab) setState(() => _tab = _tabs.index);
+    });
     _api = ResumeApi();
     _billing = BillingService(_api);
     // Best-effort load of the in-app product so the price renders in the
@@ -131,7 +136,7 @@ class _BuilderScreenState extends State<BuilderScreen>
             children: [
               Text('Resume Forge AI',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-              Text('Build · Enhance · Apply',
+              Text('Build · Enhance',
                   style: TextStyle(fontSize: 10, color: AppColors.inkMuted)),
             ],
           ),
@@ -165,26 +170,25 @@ class _BuilderScreenState extends State<BuilderScreen>
           tabs: const [
             Tab(icon: Icon(Icons.edit_note, size: 20), text: 'Edit'),
             Tab(icon: Icon(Icons.preview, size: 20), text: 'Preview'),
-            Tab(icon: Icon(Icons.work_outline, size: 20), text: 'Jobs'),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _enhance,
-        icon: const Icon(Icons.auto_awesome),
-        label: const Text('Enhance Resume using AI'),
-        backgroundColor: AppColors.brand,
-        foregroundColor: Colors.white,
-      ),
+      // Hide the Enhance FAB on the Preview tab so it never covers the
+      // Download bar. Enhance stays available from the Edit tab.
+      floatingActionButton: _tab == 0
+          ? FloatingActionButton.extended(
+              onPressed: _enhance,
+              icon: const Icon(Icons.auto_awesome),
+              label: const Text('Enhance Resume using AI'),
+              backgroundColor: AppColors.brand,
+              foregroundColor: Colors.white,
+            )
+          : null,
       body: TabBarView(
         controller: _tabs,
         children: [
           _editTab(),
           _previewTab(provider),
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(12),
-            child: JobsPanel(api: _api),
-          ),
         ],
       ),
     );
