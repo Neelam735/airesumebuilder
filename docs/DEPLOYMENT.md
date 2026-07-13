@@ -63,7 +63,7 @@ creates everything in one shot. **Manual** clicks through the dashboard.
 3. Connect the GitHub repo. Render will detect `render.yaml`.
 4. Click **Apply**. Render creates the service named `resume-builder-backend`
    and asks you to set the values for any vars marked `sync: false`:
-   - `GOOGLE_PLAY_PACKAGE_NAME` — e.g. `com.resumebuilder.app`
+   - `GOOGLE_PLAY_PACKAGE_NAME` — e.g. `com.neelam.resumebuilder`
    - `GEMINI_API_KEY` — your AI Studio key
    - `CORS_ORIGINS` — leave blank for now; we'll fill it in step 5
 5. The service starts building from `backend/Dockerfile`. The first build

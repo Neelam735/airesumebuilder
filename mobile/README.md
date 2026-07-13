@@ -100,7 +100,7 @@ In `android/app/build.gradle` set:
 
 ```groovy
 defaultConfig {
-    applicationId "com.resumebuilder.app"   // must match Play Console listing
+    applicationId "com.neelam.resumebuilder"   // must match Play Console listing
     minSdkVersion 21
     targetSdkVersion 34
 }
@@ -151,7 +151,7 @@ The backend verifies each purchase server-side via the Android Publisher API:
 4. Set on the backend:
 
    ```bash
-   export GOOGLE_PLAY_PACKAGE_NAME=com.resumebuilder.app
+   export GOOGLE_PLAY_PACKAGE_NAME=com.neelam.resumebuilder
    export GOOGLE_PLAY_PRODUCT_ID=ai_resume_improvement
    export GOOGLE_PLAY_SERVICE_ACCOUNT_JSON=/etc/secrets/play-service-account.json
    export PAYMENT_TOKEN_SIGNING_KEY=$(openssl rand -hex 32)

@@ -18,7 +18,7 @@ Pick these once and keep them consistent everywhere:
 
 | Thing | Example | Notes |
 |------|---------|-------|
-| `applicationId` | `com.resumeforge.app` | Must be globally unique on Play. Cannot change after first upload. |
+| `applicationId` | `com.neelam.resumebuilder` | Must be globally unique on Play. Cannot change after first upload. |
 | App name | `Resume Forge AI` | Shown on the device + listing. |
 | In-app product ID | `ai_resume_improvement` | Must match `BillingService.productId`. |
 | Backend URL | `https://your-app.up.railway.app` | Your deployed HTTPS backend. |
@@ -37,7 +37,7 @@ Deploy `backend/` to Railway (free subdomain, no domain purchase needed):
    (or use the `backend` branch). It auto-detects the `Dockerfile`.
 2. Set env vars: `GEMINI_API_KEY`, `GEMINI_MODEL=gemini-2.5-flash`,
    `PAYMENT_TOKEN_SIGNING_KEY` (long random string),
-   `GOOGLE_PLAY_PACKAGE_NAME=com.resumeforge.app`,
+   `GOOGLE_PLAY_PACKAGE_NAME=com.neelam.resumebuilder`,
    `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (see step 6).
 3. Settings → Networking → Generate Domain.
 4. Verify: `https://your-app.up.railway.app/api/v1/health` → `{"status":"UP"}`.

@@ -107,7 +107,7 @@ Billing only works inside the Android app, so AI improve is mobile-only.
 ```bash
 cd backend
 
-export GOOGLE_PLAY_PACKAGE_NAME=com.resumebuilder.app
+export GOOGLE_PLAY_PACKAGE_NAME=com.neelam.resumebuilder
 export GOOGLE_PLAY_PRODUCT_ID=ai_resume_improvement
 export GOOGLE_PLAY_SERVICE_ACCOUNT_JSON=/etc/secrets/play-service-account.json
 export PAYMENT_TOKEN_SIGNING_KEY=replace_with_at_least_32_random_bytes
