@@ -30,6 +30,10 @@ dependencies:
   # PDF text extraction (community-licensed)
   syncfusion_flutter_pdf: ^33.2.4
 
+  # Word (.docx) text extraction — a .docx is a ZIP of XML parts
+  archive: ^3.6.1
+  xml: ^6.5.0
+
   # File picking (8.x exposes the FilePicker.platform.pickFiles API used here;
   # 11.x removed that accessor)
   file_picker: ^8.1.6

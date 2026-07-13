@@ -6,15 +6,15 @@ import 'package:provider/provider.dart';
 
 import '../models/resume.dart';
 import '../services/api.dart';
-import '../services/pdf_extract.dart';
+import '../services/document_extract.dart';
 import '../state/resume_provider.dart';
 import '../theme.dart';
 
 enum _Stage { idle, extracting, improving, filling, done, error }
 
-/// Free flow: pick a PDF, extract text, send to /resume/parse, merge the
-/// AI-enhanced JSON back into the form, and flip the aiEnhanced flag so
-/// the next download is paid.
+/// Free flow: pick a PDF or Word (.docx) file, extract text, send to
+/// /resume/parse, merge the AI-enhanced JSON back into the form, and flip the
+/// aiEnhanced flag so the next download is paid.
 class EnhanceDialog extends StatefulWidget {
   final ResumeApi api;
 
@@ -31,7 +31,7 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
   Future<void> _pickAndProcess() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: const ['pdf'],
+      allowedExtensions: DocumentExtract.allowedExtensions,
       allowMultiple: false,
       withData: false,
     );
@@ -44,7 +44,7 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
       _error = null;
     });
     try {
-      final text = await PdfExtract.fromFile(File(path));
+      final text = await DocumentExtract.fromFile(File(path));
       setState(() => _stage = _Stage.improving);
 
       final response = await widget.api.parseResume(
@@ -152,7 +152,8 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
               ),
               const SizedBox(height: 4),
               const Text(
-                'Upload your existing PDF and let AI rewrite it using strong, professional language. '
+                'Upload your existing PDF or Word (.docx) resume and let AI rewrite it '
+                'using strong, professional language. '
                 'Enhancement is free — payment is only required when you download.',
                 style: TextStyle(color: AppColors.inkMuted, fontSize: 12),
               ),
@@ -221,10 +222,10 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
           children: [
             Icon(Icons.upload_file, size: 32, color: AppColors.brand),
             SizedBox(height: 6),
-            Text('Tap to choose a PDF',
+            Text('Tap to choose a PDF or Word file',
                 style: TextStyle(fontWeight: FontWeight.w500)),
             SizedBox(height: 2),
-            Text('Standard resumes work best',
+            Text('PDF or .docx — standard resumes work best',
                 style: TextStyle(color: AppColors.inkMuted, fontSize: 11)),
           ],
         ),
