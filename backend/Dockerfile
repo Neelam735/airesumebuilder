@@ -1,17 +1,15 @@
 # --- Build stage -------------------------------------------------------------
-FROM eclipse-temurin:17-jdk-jammy AS build
+# Use the official Maven + JDK 17 image so we don't depend on a committed Maven
+# wrapper (mvnw / .mvn), which isn't in the repo.
+FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
 
-# Cache deps separately from source for fast incremental builds.
-COPY .mvn/ .mvn/
-COPY mvnw pom.xml ./
-RUN if [ -x ./mvnw ]; then chmod +x ./mvnw && ./mvnw -B -q -DskipTests dependency:go-offline; fi
+# Cache dependencies separately from source for fast incremental builds.
+COPY pom.xml ./
+RUN mvn -B -q -DskipTests dependency:go-offline
 
 COPY src ./src
-RUN if [ -x ./mvnw ]; then ./mvnw -B -q -DskipTests package; \
-    else apt-get update && apt-get install -y --no-install-recommends maven \
-         && rm -rf /var/lib/apt/lists/* && mvn -B -q -DskipTests package; fi \
- && cp target/*.jar app.jar
+RUN mvn -B -q -DskipTests package && cp target/*.jar app.jar
 
 # --- Runtime stage -----------------------------------------------------------
 FROM eclipse-temurin:17-jre-jammy AS runtime
