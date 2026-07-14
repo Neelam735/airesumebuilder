@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -55,7 +56,11 @@ class _BuilderScreenState extends State<BuilderScreen>
   /// for yet, then exports as PDF or Word (.docx) via the system share sheet.
   Future<void> _download({bool word = false}) async {
     final provider = context.read<ResumeProvider>();
-    final mustPay = provider.aiEnhanced && !provider.hasPaidForAi;
+    // Skip the Google Play paywall in debug builds — billing doesn't work on
+    // debug/local builds anyway, so this lets you test downloads freely.
+    // Release builds keep the paywall.
+    final mustPay =
+        !kDebugMode && provider.aiEnhanced && !provider.hasPaidForAi;
 
     if (mustPay) {
       final paid = await showDialog<bool>(
@@ -282,7 +287,8 @@ class _DownloadBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mustPay = aiEnhanced && !paid;
+    // Debug builds bypass the paywall (see _download), so don't show a pay hint.
+    final mustPay = !kDebugMode && aiEnhanced && !paid;
     final payHint = mustPay ? ' (Pay $price)' : '';
 
     return Material(
@@ -304,9 +310,9 @@ class _DownloadBar extends StatelessWidget {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      paid
-                          ? 'AI-enhanced version unlocked. Re-download anytime.'
-                          : 'AI-enhanced version. Pay $price to download the polished resume.',
+                      mustPay
+                          ? 'AI-enhanced version. Pay $price to download the polished resume.'
+                          : 'AI-enhanced version unlocked. Re-download anytime.',
                       style: const TextStyle(
                           fontSize: 11, color: AppColors.inkMuted),
                     ),
