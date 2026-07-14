@@ -214,6 +214,24 @@ pw.Widget _row(List<String> items) => pw.Wrap(
           .toList(),
     );
 
+/// Keeps a section [header] glued to its first item so a heading is never left
+/// stranded at the bottom of a page while its content flows to the next one.
+/// The header + first item become one non-splitting block (Padding is not a
+/// spanning widget, so MultiPage moves it whole); remaining items paginate.
+List<pw.Widget> _glue(List<pw.Widget> header, List<pw.Widget> items) {
+  if (items.isEmpty) return header;
+  return [
+    pw.Padding(
+      padding: pw.EdgeInsets.zero,
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+        children: [...header, items.first],
+      ),
+    ),
+    ...items.skip(1),
+  ];
+}
+
 // ---- Classic ---------------------------------------------------------------
 
 List<pw.Widget> _classicChildren(ResumeData r, PdfColor accent) {
@@ -245,8 +263,7 @@ List<pw.Widget> _classicChildren(ResumeData r, PdfColor accent) {
   out.add(pw.SizedBox(height: 14));
 
   void section(String title, List<pw.Widget> children) {
-    out.add(_classicHeader(title, accent));
-    out.addAll(children);
+    out.addAll(_glue([_classicHeader(title, accent)], children));
     out.add(pw.SizedBox(height: 12));
   }
 
@@ -461,80 +478,85 @@ pw.Widget _modernSidebar(ResumeData r, PdfColor accent) {
 List<pw.Widget> _modernMain(ResumeData r, PdfColor accent) {
   final out = <pw.Widget>[];
   if (r.summary.isNotEmpty) {
-    out.add(_modernSection('Profile', accent));
-    out.add(_h(r.summary));
+    out.addAll(_glue([_modernSection('Profile', accent)], [_h(r.summary)]));
     out.add(pw.SizedBox(height: 12));
   }
   if (r.experience.isNotEmpty) {
-    out.add(_modernSection('Experience', accent));
-    out.addAll(r.experience.map((e) => pw.Padding(
-          padding: const pw.EdgeInsets.only(bottom: 8),
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-            children: [
-              pw.Row(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+    final items = r.experience
+        .map<pw.Widget>((e) => pw.Padding(
+              padding: const pw.EdgeInsets.only(bottom: 8),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.stretch,
                 children: [
-                  pw.Expanded(
-                    child: pw.Text(e.role,
-                        style: pw.TextStyle(
-                            fontSize: 11,
-                            fontWeight: pw.FontWeight.bold,
-                            color: PdfColors.grey900)),
+                  pw.Row(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Expanded(
+                        child: pw.Text(e.role,
+                            style: pw.TextStyle(
+                                fontSize: 11,
+                                fontWeight: pw.FontWeight.bold,
+                                color: PdfColors.grey900)),
+                      ),
+                      if (e.duration.isNotEmpty) ...[
+                        pw.SizedBox(width: 8),
+                        pw.Text(e.duration,
+                            style: const pw.TextStyle(
+                                fontSize: 9, color: PdfColors.grey600)),
+                      ],
+                    ],
                   ),
-                  if (e.duration.isNotEmpty) ...[
-                    pw.SizedBox(width: 8),
-                    pw.Text(e.duration,
-                        style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
-                  ],
+                  if (e.company.isNotEmpty)
+                    pw.Text(e.company,
+                        style: pw.TextStyle(
+                            fontSize: 10,
+                            fontStyle: pw.FontStyle.italic,
+                            color: PdfColors.grey700)),
+                  if (e.description.isNotEmpty)
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.only(top: 2),
+                      child: _h(e.description),
+                    ),
                 ],
               ),
-              if (e.company.isNotEmpty)
-                pw.Text(e.company,
-                    style: pw.TextStyle(
-                        fontSize: 10,
-                        fontStyle: pw.FontStyle.italic,
-                        color: PdfColors.grey700)),
-              if (e.description.isNotEmpty)
-                pw.Padding(
-                  padding: const pw.EdgeInsets.only(top: 2),
-                  child: _h(e.description),
-                ),
-            ],
-          ),
-        )));
+            ))
+        .toList();
+    out.addAll(_glue([_modernSection('Experience', accent)], items));
     out.add(pw.SizedBox(height: 4));
   }
   if (r.projects.isNotEmpty) {
-    out.add(_modernSection('Projects', accent));
-    out.addAll(r.projects.map((p) => pw.Padding(
-          padding: const pw.EdgeInsets.only(bottom: 6),
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Row(
+    final items = r.projects
+        .map<pw.Widget>((p) => pw.Padding(
+              padding: const pw.EdgeInsets.only(bottom: 6),
+              child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Expanded(
-                    child: pw.Text(p.name,
-                        style: pw.TextStyle(
-                            fontSize: 11,
-                            fontWeight: pw.FontWeight.bold,
-                            color: PdfColors.grey900)),
+                  pw.Row(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Expanded(
+                        child: pw.Text(p.name,
+                            style: pw.TextStyle(
+                                fontSize: 11,
+                                fontWeight: pw.FontWeight.bold,
+                                color: PdfColors.grey900)),
+                      ),
+                      if (p.link.isNotEmpty) ...[
+                        pw.SizedBox(width: 8),
+                        pw.Text(p.link,
+                            style: const pw.TextStyle(
+                                fontSize: 9, color: PdfColors.grey600)),
+                      ],
+                    ],
                   ),
-                  if (p.link.isNotEmpty) ...[
-                    pw.SizedBox(width: 8),
-                    pw.Text(p.link,
-                        style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
-                  ],
+                  if (p.description.isNotEmpty) _h(p.description),
                 ],
               ),
-              if (p.description.isNotEmpty) _h(p.description),
-            ],
-          ),
-        )));
+            ))
+        .toList();
+    out.addAll(_glue([_modernSection('Projects', accent)], items));
   }
 
   // If there is no main-column content at all, MultiPage needs at least one
@@ -592,9 +614,8 @@ List<pw.Widget> _minimalChildren(ResumeData r, PdfColor accent) {
   out.add(pw.SizedBox(height: 16));
 
   void section(String title, List<pw.Widget> children) {
-    out.add(_minimalHeader(title, accent));
-    out.add(pw.SizedBox(height: 8));
-    out.addAll(children);
+    out.addAll(_glue(
+        [_minimalHeader(title, accent), pw.SizedBox(height: 8)], children));
     out.add(pw.SizedBox(height: 16));
   }
 

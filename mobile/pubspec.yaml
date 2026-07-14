@@ -41,6 +41,10 @@ dependencies:
   # Open URLs (for "Apply with AI" → job listing)
   url_launcher: ^6.2.6
 
+  # Sharing generated files (Word .docx) via the system share sheet
+  share_plus: ^9.0.0
+  path_provider: ^2.1.3
+
   # Useful UX bits
   flutter_markdown: ^0.7.1
 

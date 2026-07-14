@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../services/api.dart';
 import '../services/billing.dart';
+import '../services/docx_export.dart';
 import '../services/pdf_export.dart';
 import '../state/resume_provider.dart';
 import '../theme.dart';
@@ -51,8 +52,8 @@ class _BuilderScreenState extends State<BuilderScreen>
 
   /// Entry point for every "Download" tap in the app. Routes through the
   /// Google Play paywall if the resume has been AI-enhanced and not paid
-  /// for yet. Otherwise the system Share/Save sheet opens directly.
-  Future<void> _download() async {
+  /// for yet, then exports as PDF or Word (.docx) via the system share sheet.
+  Future<void> _download({bool word = false}) async {
     final provider = context.read<ResumeProvider>();
     final mustPay = provider.aiEnhanced && !provider.hasPaidForAi;
 
@@ -67,11 +68,15 @@ class _BuilderScreenState extends State<BuilderScreen>
 
     setState(() => _exporting = true);
     try {
-      await PdfExport.shareOrSave(provider.data);
+      if (word) {
+        await DocxExport.shareOrSave(provider.data);
+      } else {
+        await PdfExport.shareOrSave(provider.data);
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not export PDF: $e')),
+        SnackBar(content: Text('Could not export ${word ? 'Word' : 'PDF'}: $e')),
       );
     } finally {
       if (mounted) setState(() => _exporting = false);
@@ -152,20 +157,39 @@ class _BuilderScreenState extends State<BuilderScreen>
             icon: const Icon(Icons.refresh, color: AppColors.inkMuted),
             onPressed: _confirmReset,
           ),
-          IconButton(
-            tooltip: provider.aiEnhanced && !provider.hasPaidForAi
-                ? 'Download (paid for AI version)'
-                : 'Download',
-            icon: _exporting
-                ? const SizedBox(
+          _exporting
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: AppColors.ink),
-                  )
-                : const Icon(Icons.ios_share, color: AppColors.ink),
-            onPressed: _exporting ? null : _download,
-          ),
+                  ),
+                )
+              : PopupMenuButton<String>(
+                  tooltip: 'Download',
+                  icon: const Icon(Icons.ios_share, color: AppColors.ink),
+                  onSelected: (v) => _download(word: v == 'word'),
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: 'pdf',
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(Icons.picture_as_pdf),
+                        title: Text('Download PDF'),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'word',
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(Icons.description),
+                        title: Text('Download Word (.docx)'),
+                      ),
+                    ),
+                  ],
+                ),
         ],
         bottom: TabBar(
           controller: _tabs,
@@ -229,7 +253,8 @@ class _BuilderScreenState extends State<BuilderScreen>
               aiEnhanced: provider.aiEnhanced,
               paid: provider.hasPaidForAi,
               price: _billing.product?.price ?? '₹29',
-              onPressed: _exporting ? null : _download,
+              onDownloadPdf: _exporting ? null : () => _download(word: false),
+              onDownloadWord: _exporting ? null : () => _download(word: true),
             ),
           ),
         ),
@@ -243,24 +268,22 @@ class _DownloadBar extends StatelessWidget {
   final bool aiEnhanced;
   final bool paid;
   final String price;
-  final VoidCallback? onPressed;
+  final VoidCallback? onDownloadPdf;
+  final VoidCallback? onDownloadWord;
 
   const _DownloadBar({
     required this.busy,
     required this.aiEnhanced,
     required this.paid,
     required this.price,
-    required this.onPressed,
+    required this.onDownloadPdf,
+    required this.onDownloadWord,
   });
 
   @override
   Widget build(BuildContext context) {
     final mustPay = aiEnhanced && !paid;
-    final label = busy
-        ? 'Preparing…'
-        : mustPay
-            ? 'Download (Pay $price)'
-            : 'Download Resume';
+    final payHint = mustPay ? ' (Pay $price)' : '';
 
     return Material(
       color: AppColors.card,
@@ -283,21 +306,51 @@ class _DownloadBar extends StatelessWidget {
                     child: Text(
                       paid
                           ? 'AI-enhanced version unlocked. Re-download anytime.'
-                          : 'AI-enhanced version. Pay $price to download the polished PDF.',
+                          : 'AI-enhanced version. Pay $price to download the polished resume.',
                       style: const TextStyle(
                           fontSize: 11, color: AppColors.inkMuted),
                     ),
                   ),
                 ]),
               ),
-            ElevatedButton.icon(
-              icon: Icon(mustPay ? Icons.lock_open : Icons.download_rounded),
-              label: Text(label),
-              onPressed: onPressed,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-            ),
+            if (busy)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 14),
+                child: Center(
+                  child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: AppColors.brand),
+                  ),
+                ),
+              )
+            else
+              Row(children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    icon: Icon(mustPay ? Icons.lock_open : Icons.picture_as_pdf,
+                        size: 18),
+                    label: Text('PDF$payHint'),
+                    onPressed: onDownloadPdf,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: Icon(mustPay ? Icons.lock_open : Icons.description,
+                        size: 18),
+                    label: const Text('Word'),
+                    onPressed: onDownloadWord,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ),
+              ]),
           ],
         ),
       ),
