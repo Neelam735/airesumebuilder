@@ -1,0 +1,73 @@
+name: resume_builder
+description: AI-powered resume builder with Razorpay payment and Gemini improvement.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.19.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+  # State + storage
+  provider: ^6.1.2
+  shared_preferences: ^2.2.3
+
+  # Networking
+  http: ^1.2.1
+
+  # Google Play in-app billing
+  in_app_purchase: ^3.2.0
+  in_app_purchase_android: ^0.4.0+10
+
+  # PDF generation + sharing
+  pdf: ^3.10.8
+  printing: ^5.13.1
+
+  # PDF text extraction (community-licensed)
+  syncfusion_flutter_pdf: ^33.2.4
+
+  # Word (.docx) text extraction — a .docx is a ZIP of XML parts
+  archive: ^3.6.1
+  xml: ^6.5.0
+
+  # File picking (8.x exposes the FilePicker.platform.pickFiles API used here;
+  # 11.x removed that accessor)
+  file_picker: ^8.1.6
+
+  # Open URLs (for "Apply with AI" → job listing)
+  url_launcher: ^6.2.6
+
+  # Sharing generated files (Word .docx) via the system share sheet.
+  # 10.x uses web ^1.0.0, matching file_picker 8.x (9.x pins an older web pkg).
+  share_plus: ^10.1.0
+  path_provider: ^2.1.3
+
+  # Useful UX bits
+  flutter_markdown: ^0.7.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  # Generates the Android launcher icons from assets/icon (see config below).
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+
+# App icon generation.
+#   Run:  dart run flutter_launcher_icons
+# The source art (assets/icon/app_icon*.png) is an original design — a résumé
+# document with an AI sparkle — so there are no third-party/copyright concerns.
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon/app_icon.png"
+  adaptive_icon_background: "#5B3FE0"
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+  min_sdk_android: 21
+  remove_alpha_ios: true

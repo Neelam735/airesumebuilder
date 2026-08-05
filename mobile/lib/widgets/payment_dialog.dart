@@ -1,0 +1,153 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../services/billing.dart';
+import '../state/resume_provider.dart';
+import '../theme.dart';
+
+/// Shown when the user taps Download on an AI-enhanced resume that hasn't
+/// been paid for yet. Drives the Google Play purchase, persists the
+/// resulting payment token, and resolves with `true` on success so the
+/// caller can proceed to share/download the PDF.
+class PaymentDialog extends StatefulWidget {
+  final BillingService billing;
+
+  const PaymentDialog({super.key, required this.billing});
+
+  @override
+  State<PaymentDialog> createState() => _PaymentDialogState();
+}
+
+class _PaymentDialogState extends State<PaymentDialog> {
+  bool _busy = false;
+  String _status = '';
+  String? _error;
+
+  Future<void> _purchase() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+      _status = 'Opening Google Play…';
+    });
+    try {
+      final token = await widget.billing.purchaseAndVerify(
+        onStatus: (s) => setState(() => _status = s),
+      );
+      if (!mounted) return;
+      context.read<ResumeProvider>().setAiPaymentToken(token);
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      setState(() {
+        _busy = false;
+        _error = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final price = widget.billing.product?.price ?? '₹29';
+    return Dialog(
+      backgroundColor: AppColors.card,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                        color: AppColors.brand, shape: BoxShape.circle),
+                  ),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text('Unlock AI-enhanced download',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600)),
+                  ),
+                  IconButton(
+                    onPressed: _busy ? null : () => Navigator.of(context).pop(false),
+                    icon: const Icon(Icons.close, color: AppColors.inkMuted),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'AI enhancement is free — pay once to download the polished, '
+                'professionally rewritten PDF. The unlock stays active for '
+                'the current resume; reset to remove it.',
+                style: TextStyle(color: AppColors.inkMuted, fontSize: 12),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.brand.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.brand.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('AI-enhanced PDF download',
+                              style: TextStyle(
+                                  fontSize: 14, fontWeight: FontWeight.w600)),
+                          Text('One-time fee, billed by Google Play',
+                              style: TextStyle(
+                                  color: AppColors.inkMuted, fontSize: 11)),
+                        ],
+                      ),
+                    ),
+                    Text(price,
+                        style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.brand)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.danger.withOpacity(0.1),
+                      border: Border.all(color: AppColors.danger.withOpacity(0.3)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(_error!,
+                        style: const TextStyle(
+                            color: AppColors.danger, fontSize: 12)),
+                  ),
+                ),
+              ElevatedButton(
+                onPressed: _busy ? null : _purchase,
+                child: Text(_busy
+                    ? (_status.isEmpty ? 'Processing…' : _status)
+                    : 'Pay with Google Play'),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Secure billing via Google Play. After payment your download '
+                'starts automatically.',
+                style: TextStyle(color: AppColors.inkMuted, fontSize: 11),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

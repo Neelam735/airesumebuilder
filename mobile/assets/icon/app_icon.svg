@@ -1,0 +1,32 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8B6BFF"/>
+      <stop offset="1" stop-color="#5B3FE0"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="22" flood-color="#2B1E66" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="232" fill="url(#bg)"/>
+
+  <!-- Résumé document -->
+  <g filter="url(#soft)">
+    <rect x="318" y="236" width="388" height="516" rx="40" fill="#FFFFFF"/>
+  </g>
+  <!-- Name / header accent bar -->
+  <rect x="372" y="312" width="196" height="40" rx="20" fill="#7C5CFF"/>
+  <!-- Text lines -->
+  <rect x="372" y="392" width="280" height="22" rx="11" fill="#CFC5FF"/>
+  <rect x="372" y="442" width="280" height="22" rx="11" fill="#E7E2F7"/>
+  <rect x="372" y="492" width="212" height="22" rx="11" fill="#E7E2F7"/>
+  <rect x="372" y="566" width="280" height="22" rx="11" fill="#E7E2F7"/>
+  <rect x="372" y="616" width="244" height="22" rx="11" fill="#E7E2F7"/>
+  <rect x="372" y="666" width="180" height="22" rx="11" fill="#E7E2F7"/>
+
+  <!-- AI sparkles -->
+  <path d="M712 296 C 726 342, 758 374, 804 388 C 758 402, 726 434, 712 480 C 698 434, 666 402, 620 388 C 666 374, 698 342, 712 296 Z" fill="#FFD36B"/>
+  <path d="M786 250 C 793 272, 809 288, 831 295 C 809 302, 793 318, 786 340 C 779 318, 763 302, 741 295 C 763 288, 779 272, 786 250 Z" fill="#FFE9A8"/>
+</svg>
