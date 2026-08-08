@@ -9,7 +9,7 @@ class ResumeBuilderApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Resume Forge AI',
+      title: 'AI Resume Maker',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
       home: const BuilderScreen(),
