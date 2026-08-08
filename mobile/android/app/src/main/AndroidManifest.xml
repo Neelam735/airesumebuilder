@@ -18,7 +18,7 @@
     </queries>
 
     <application
-        android:label="AI Resume Maker"
+        android:label="Resume Forge AI"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">

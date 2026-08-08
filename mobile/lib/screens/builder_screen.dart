@@ -149,7 +149,7 @@ class _BuilderScreenState extends State<BuilderScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('AI Resume Maker',
+              Text('Resume Forge AI',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
               Text('Build · Enhance',
                   style: TextStyle(fontSize: 10, color: AppColors.inkMuted)),
