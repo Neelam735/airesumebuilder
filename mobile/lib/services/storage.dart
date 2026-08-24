@@ -7,6 +7,7 @@ class ResumeStorage {
   static const _resumeKey = 'rb.resume.v1';
   static const _aiEnhancedKey = 'rb.aiEnhanced';
   static const _aiPaymentTokenKey = 'rb.aiPaymentToken';
+  static const _onboardingKey = 'rb.onboardingDone';
 
   final SharedPreferences _prefs;
   ResumeStorage(this._prefs);
@@ -40,7 +41,13 @@ class ResumeStorage {
     }
   }
 
+  /// Whether the first-run onboarding walkthrough has been completed.
+  bool getOnboardingDone() => _prefs.getBool(_onboardingKey) ?? false;
+
+  Future<void> setOnboardingDone(bool v) => _prefs.setBool(_onboardingKey, v);
+
   Future<void> clear() async {
+    // Note: onboarding flag is intentionally NOT cleared on Reset.
     await _prefs.remove(_resumeKey);
     await _prefs.remove(_aiEnhancedKey);
     await _prefs.remove(_aiPaymentTokenKey);
