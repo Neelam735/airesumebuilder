@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:in_app_review/in_app_review.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../services/api.dart';
 import '../services/billing.dart';
@@ -101,6 +103,35 @@ class _BuilderScreenState extends State<BuilderScreen>
     }
   }
 
+  static const _playUrl =
+      'https://play.google.com/store/apps/details?id=com.neelam.resumebuilder';
+
+  /// Trigger the Play in-app review flow; fall back to opening the store page.
+  Future<void> _rateApp() async {
+    final review = InAppReview.instance;
+    try {
+      if (await review.isAvailable()) {
+        await review.requestReview();
+      } else {
+        await review.openStoreListing();
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open the rating dialog.')),
+      );
+    }
+  }
+
+  /// Share the app's Play Store link via the system share sheet.
+  Future<void> _shareApp() async {
+    await Share.share(
+      'Build and AI-enhance your resume with AI Resume Builder — '
+      'download it as PDF or Word:\n$_playUrl',
+      subject: 'AI Resume Builder',
+    );
+  }
+
   Future<void> _confirmReset() async {
     final ok = await showDialog<bool>(
       context: context,
@@ -195,6 +226,38 @@ class _BuilderScreenState extends State<BuilderScreen>
                     ),
                   ],
                 ),
+          PopupMenuButton<String>(
+            tooltip: 'More',
+            icon: const Icon(Icons.more_vert, color: AppColors.inkMuted),
+            onSelected: (v) {
+              switch (v) {
+                case 'rate':
+                  _rateApp();
+                  break;
+                case 'share':
+                  _shareApp();
+                  break;
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'rate',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.star_rate_rounded),
+                  title: Text('Rate app'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'share',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.share),
+                  title: Text('Share app'),
+                ),
+              ),
+            ],
+          ),
         ],
         bottom: TabBar(
           controller: _tabs,

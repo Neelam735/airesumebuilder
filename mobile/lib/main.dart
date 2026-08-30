@@ -11,11 +11,15 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   final storage = ResumeStorage(prefs);
   final initial = await storage.load();
+  final onboardingDone = storage.getOnboardingDone();
 
   runApp(
     ChangeNotifierProvider(
       create: (_) => ResumeProvider(storage: storage, initial: initial),
-      child: const ResumeBuilderApp(),
+      child: ResumeBuilderApp(
+        storage: storage,
+        showOnboarding: !onboardingDone,
+      ),
     ),
   );
 }
