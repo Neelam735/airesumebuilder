@@ -112,8 +112,10 @@ class _BuilderScreenState extends State<BuilderScreen>
     }
   }
 
-  Future<void> _enhance() async {
-    _analytics.log('enhance_opened');
+  /// [source] records which control was tapped ("fab" or "appbar"), so the
+  /// logs show which entry point people actually use.
+  Future<void> _enhance({String source = 'fab'}) async {
+    _analytics.log('enhance_tapped', source);
     final enhanced = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -125,7 +127,7 @@ class _BuilderScreenState extends State<BuilderScreen>
       _tabs.animateTo(1);
     } else {
       // Closed without a successful enhancement. Completes the funnel:
-      // enhance_opened -> enhance_started -> enhance_success, so drop-off at
+      // enhance_tapped -> enhance_started -> enhance_success, so drop-off at
       // either step is visible rather than just disappearing.
       _analytics.log('enhance_dismissed');
     }
@@ -217,6 +219,13 @@ class _BuilderScreenState extends State<BuilderScreen>
           ),
         ]),
         actions: [
+          // Always reachable, including from the Preview tab where the FAB is
+          // hidden so it can't cover the Download bar.
+          IconButton(
+            tooltip: 'Enhance Resume using AI',
+            icon: const Icon(Icons.auto_awesome, color: AppColors.brand),
+            onPressed: () => _enhance(source: 'appbar'),
+          ),
           IconButton(
             tooltip: 'Reset',
             icon: const Icon(Icons.refresh, color: AppColors.inkMuted),
@@ -320,7 +329,7 @@ class _BuilderScreenState extends State<BuilderScreen>
       // Download bar. Enhance stays available from the Edit tab.
       floatingActionButton: _tab == 0
           ? FloatingActionButton.extended(
-              onPressed: _enhance,
+              onPressed: () => _enhance(source: 'fab'),
               icon: const Icon(Icons.auto_awesome),
               label: const Text('Enhance Resume using AI'),
               backgroundColor: AppColors.brand,
