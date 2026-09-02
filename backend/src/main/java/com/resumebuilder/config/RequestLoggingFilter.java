@@ -69,6 +69,8 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     private static String action(String path) {
         if (path.endsWith("/resume/parse")) return "RESUME_ENHANCE";
         if (path.endsWith("/payment/verify")) return "PAYMENT_VERIFY";
+        if (path.endsWith("/razorpay/order")) return "RAZORPAY_ORDER";
+        if (path.endsWith("/razorpay/verify")) return "RAZORPAY_VERIFY";
         if (path.endsWith("/events")) return "APP_EVENT";
         if (path.endsWith("/jobs/match")) return "JOBS_MATCH";
         if (path.endsWith("/jobs/cover-letter")) return "COVER_LETTER";

@@ -7,6 +7,7 @@ import '../services/api.dart';
 import '../services/billing.dart';
 import '../services/docx_export.dart';
 import '../services/pdf_export.dart';
+import '../services/razorpay_service.dart';
 import '../state/resume_provider.dart';
 import '../theme.dart';
 import '../widgets/enhance_dialog.dart';
@@ -26,6 +27,7 @@ class _BuilderScreenState extends State<BuilderScreen>
   late TabController _tabs;
   late ResumeApi _api;
   late BillingService _billing;
+  late RazorpayService _razorpay;
   late Analytics _analytics;
   bool _exporting = false;
   int _tab = 0;
@@ -44,6 +46,7 @@ class _BuilderScreenState extends State<BuilderScreen>
     });
     _api = ResumeApi();
     _billing = BillingService(_api);
+    _razorpay = RazorpayService(_api);
     _analytics = Analytics(_api);
     _analytics.log('app_open');
     // Best-effort load of the in-app product so the price renders in the
@@ -55,6 +58,7 @@ class _BuilderScreenState extends State<BuilderScreen>
   void dispose() {
     _tabs.dispose();
     _billing.dispose();
+    _razorpay.dispose();
     super.dispose();
   }
 
@@ -76,7 +80,7 @@ class _BuilderScreenState extends State<BuilderScreen>
       final paid = await showDialog<bool>(
         context: context,
         barrierDismissible: false,
-        builder: (_) => PaymentDialog(billing: _billing),
+        builder: (_) => PaymentDialog(billing: _billing, razorpay: _razorpay),
       );
       if (paid != true) {
         _analytics.log('payment_cancelled');

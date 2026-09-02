@@ -81,6 +81,17 @@ public class PaymentService {
         return new VerifyPaymentResponse(true, token, "Purchase verified successfully");
     }
 
+    /**
+     * Issues a payment token for a purchase verified by a provider other than
+     * Google Play (currently Razorpay). The token is minted and validated
+     * exactly like a Play one, so {@code /resume/parse} needs no special case.
+     *
+     * @param reference provider-scoped payment reference, e.g. {@code razorpay:pay_XXX}
+     */
+    public String issueExternalPaymentToken(String reference) {
+        return issueToken(properties.getProductId(), reference);
+    }
+
     public boolean isTokenValid(String token) {
         if (token == null) return false;
         TokenRecord record = verifiedTokens.get(token);
