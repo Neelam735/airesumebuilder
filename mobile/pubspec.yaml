@@ -1,7 +1,7 @@
 name: resume_builder
 description: AI-powered resume builder with Razorpay payment and Gemini improvement.
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -45,6 +45,9 @@ dependencies:
   # 10.x uses web ^1.0.0, matching file_picker 8.x (9.x pins an older web pkg).
   share_plus: ^10.1.0
   path_provider: ^2.1.3
+
+  # In-app rating prompt ("Rate app") via the Play in-app review API
+  in_app_review: ^2.0.9
 
   # Useful UX bits
   flutter_markdown: ^0.7.1
