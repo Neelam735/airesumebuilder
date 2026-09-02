@@ -18,11 +18,11 @@ import java.io.IOException;
  * server (Railway) logs without any change to the mobile app.
  *
  * Each request produces one line under the "USER_EVENT" logger, e.g.
- *   action=RESUME_ENHANCE method=POST path=/api/v1/resume/parse status=200 durationMs=2143 ip=1.2.3.4 ua="Dart/3.3 (dart:io)"
+ *   action=RESUME_ENHANCE method=POST path=/api/v1/resume/parse status=200 durationMs=2143 ua="Dart/3.3 (dart:io)"
  *
  * Health checks are logged at DEBUG so Railway's constant probes don't drown
- * out real traffic. Nothing from the request body is logged, so no resume
- * content or personal data is written to the logs.
+ * out real traffic. Neither the request body nor the client IP address is
+ * logged, so no resume content or personal data is written to the logs.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 10)
@@ -43,14 +43,13 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             // Only report our own API surface; ignore favicon/static probes.
             if (path != null && path.startsWith("/api/")) {
                 long ms = System.currentTimeMillis() - start;
-                String line = "action={} method={} path={} status={} durationMs={} ip={} ua=\"{}\"";
+                String line = "action={} method={} path={} status={} durationMs={} ua=\"{}\"";
                 Object[] args = {
                         action(path),
                         clean(request.getMethod()),
                         clean(path),
                         response.getStatus(),
                         ms,
-                        clientIp(request),
                         clean(request.getHeader("User-Agent"))
                 };
                 if (isHealth(path)) {
@@ -75,19 +74,6 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         if (path.endsWith("/jobs/cover-letter")) return "COVER_LETTER";
         if (isHealth(path)) return "HEALTH";
         return "API_CALL";
-    }
-
-    /**
-     * Railway terminates TLS at a proxy, so the socket address is the proxy's.
-     * Prefer the first hop in X-Forwarded-For, which is the real client.
-     */
-    private static String clientIp(HttpServletRequest request) {
-        String fwd = request.getHeader("X-Forwarded-For");
-        if (fwd != null && !fwd.isBlank()) {
-            int comma = fwd.indexOf(',');
-            return clean(comma > 0 ? fwd.substring(0, comma) : fwd);
-        }
-        return clean(request.getRemoteAddr());
     }
 
     /** Strip newlines (log-injection safe) and cap length. */
