@@ -19,3 +19,6 @@ backend/*.log
 # OS
 .DS_Store
 Thumbs.db
+
+# TypeScript incremental build cache
+*.tsbuildinfo
