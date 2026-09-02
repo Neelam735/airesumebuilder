@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -59,6 +60,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(Map.of(
                 "error", "Method not allowed",
                 "status", 405
+        ));
+    }
+
+    /**
+     * The request body couldn't be read/parsed — malformed JSON, or (commonly)
+     * the client aborted or stalled mid-upload so the body never fully arrived
+     * (SocketTimeoutException / ClientAbortException). This is a client-side
+     * transport issue or a scanner probing the public URL, not a server fault —
+     * return 400 and log at warn instead of a scary ERROR 500.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleUnreadableBody(HttpMessageNotReadableException ex) {
+        log.warn("Unreadable/incomplete request body: {}", ex.getMostSpecificCause().getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                "error", "Request body was malformed or did not fully arrive. Please retry.",
+                "status", 400
         ));
     }
 
