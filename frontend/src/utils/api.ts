@@ -41,7 +41,35 @@ export interface JobMatchResponse {
   source: string;
 }
 
+/** What the server needs us to know to open Razorpay Checkout. */
+export interface RazorpayOrder {
+  orderId: string;
+  amount: number;
+  currency: string;
+  /** Public key id. The key secret stays on the server. */
+  keyId: string;
+  companyName: string;
+  description: string;
+}
+
+export interface VerifyPaymentResult {
+  verified: boolean;
+  paymentToken: string;
+  message: string;
+}
+
 export const api = {
+  /** Creates an order. The amount is set server-side, not by the browser. */
+  createRazorpayOrder: () =>
+    postJSON<RazorpayOrder>('/payment/razorpay/order'),
+
+  /** Server re-derives the signature; a forged payment is rejected. */
+  verifyRazorpayPayment: (payload: {
+    razorpayOrderId: string;
+    razorpayPaymentId: string;
+    razorpaySignature: string;
+  }) => postJSON<VerifyPaymentResult>('/payment/razorpay/verify', payload),
+
   parseResume: (paymentToken: string, resumeText: string) =>
     postJSON<{ resume: any; message: string }>('/resume/parse', {
       paymentToken,

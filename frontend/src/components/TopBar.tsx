@@ -14,7 +14,7 @@ export default function TopBar({ onImprove, onDownload, onReset, isExporting }: 
             <span className="text-brand font-bold">R</span>
           </div>
           <div>
-            <div className="text-sm font-semibold leading-none">Resume Forge AI</div>
+            <div className="text-sm font-semibold leading-none">AI Resume Builder</div>
             <div className="text-[11px] text-ink-muted">Build · Improve · Export</div>
           </div>
         </div>
