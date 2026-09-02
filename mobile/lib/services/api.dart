@@ -59,6 +59,22 @@ class ResumeApi {
     throw ApiException(res.statusCode, message);
   }
 
+  /// Fire-and-forget analytics event. Never throws and never blocks the UI —
+  /// failures (offline, etc.) are silently ignored.
+  Future<void> logEvent(Map<String, dynamic> body) async {
+    try {
+      await http
+          .post(
+            Uri.parse('$baseUrl/api/v1/events'),
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 5));
+    } catch (_) {
+      // Analytics must never affect the app; swallow all errors.
+    }
+  }
+
   Future<Map<String, dynamic>> verifyPurchase({
     required String productId,
     required String purchaseToken,
