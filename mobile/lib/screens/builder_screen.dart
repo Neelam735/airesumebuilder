@@ -112,9 +112,9 @@ class _BuilderScreenState extends State<BuilderScreen>
     }
   }
 
-  /// [source] records which control was tapped ("fab" or "appbar"), so the
-  /// logs show which entry point people actually use.
-  Future<void> _enhance({String source = 'fab'}) async {
+  /// [source] records which control was tapped, so the logs show which entry
+  /// point people use if more are added later.
+  Future<void> _enhance({String source = 'center'}) async {
     _analytics.log('enhance_tapped', source);
     final enhanced = await showDialog<bool>(
       context: context,
@@ -219,13 +219,6 @@ class _BuilderScreenState extends State<BuilderScreen>
           ),
         ]),
         actions: [
-          // Always reachable, including from the Preview tab where the FAB is
-          // hidden so it can't cover the Download bar.
-          IconButton(
-            tooltip: 'Enhance Resume using AI',
-            icon: const Icon(Icons.auto_awesome, color: AppColors.brand),
-            onPressed: () => _enhance(source: 'appbar'),
-          ),
           IconButton(
             tooltip: 'Reset',
             icon: const Icon(Icons.refresh, color: AppColors.inkMuted),
@@ -314,34 +307,80 @@ class _BuilderScreenState extends State<BuilderScreen>
             ],
           ),
         ],
-        bottom: TabBar(
-          controller: _tabs,
-          labelColor: AppColors.brand,
-          unselectedLabelColor: AppColors.inkMuted,
-          indicatorColor: AppColors.brand,
-          tabs: const [
-            Tab(icon: Icon(Icons.edit_note, size: 20), text: 'Edit'),
-            Tab(icon: Icon(Icons.preview, size: 20), text: 'Preview'),
-          ],
+        // Custom tab row so Enhance sits between Edit and Preview. It replaces
+        // the floating button, which was only on the Edit tab and could cover
+        // content; here it is central and visible from either tab.
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(72),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+            child: Row(
+              children: [
+                Expanded(child: _tabButton(Icons.edit_note, 'Edit', 0)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: ElevatedButton.icon(
+                    onPressed: () => _enhance(source: 'center'),
+                    icon: const Icon(Icons.auto_awesome, size: 18),
+                    label: const Text('Enhance with AI'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.brand,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24)),
+                    ),
+                  ),
+                ),
+                Expanded(child: _tabButton(Icons.preview, 'Preview', 1)),
+              ],
+            ),
+          ),
         ),
       ),
-      // Hide the Enhance FAB on the Preview tab so it never covers the
-      // Download bar. Enhance stays available from the Edit tab.
-      floatingActionButton: _tab == 0
-          ? FloatingActionButton.extended(
-              onPressed: () => _enhance(source: 'fab'),
-              icon: const Icon(Icons.auto_awesome),
-              label: const Text('Enhance Resume using AI'),
-              backgroundColor: AppColors.brand,
-              foregroundColor: Colors.white,
-            )
-          : null,
       body: TabBarView(
         controller: _tabs,
         children: [
           _editTab(),
           _previewTab(provider),
         ],
+      ),
+    );
+  }
+
+  /// One side of the custom tab row. Reproduces TabBar's selected styling
+  /// (brand colour plus an underline) since the Enhance button sits between
+  /// the two tabs and a plain TabBar can't host a widget in the middle.
+  Widget _tabButton(IconData icon, String label, int index) {
+    final selected = _tab == index;
+    final color = selected ? AppColors.brand : AppColors.inkMuted;
+    return InkWell(
+      onTap: () => _tabs.animateTo(index),
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 20, color: color),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: color,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Container(
+              height: 2,
+              width: 28,
+              color: selected ? AppColors.brand : Colors.transparent,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -357,7 +396,7 @@ class _BuilderScreenState extends State<BuilderScreen>
         EducationForm(),
         ProjectsForm(),
         LanguagesForm(),
-        SizedBox(height: 80), // breathing room for FAB
+        SizedBox(height: 24),
       ],
     );
   }
