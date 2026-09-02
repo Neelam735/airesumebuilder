@@ -69,7 +69,10 @@ class _BuilderScreenState extends State<BuilderScreen>
   Future<void> _download({bool word = false}) async {
     final provider = context.read<ResumeProvider>();
     final format = word ? 'word' : 'pdf';
-    _analytics.log('download_tap', format);
+    // Record whether this is an AI-enhanced or a plain download, so the logs
+    // distinguish the two ("pdf/ai" vs "pdf/plain") rather than just the format.
+    final detail = '$format/${provider.aiEnhanced ? 'ai' : 'plain'}';
+    _analytics.log('download_tap', detail);
     // Skip the Google Play paywall in debug builds — billing doesn't work on
     // debug/local builds anyway, so this lets you test downloads freely.
     // Release builds keep the paywall.
@@ -97,9 +100,9 @@ class _BuilderScreenState extends State<BuilderScreen>
       } else {
         await PdfExport.shareOrSave(provider.data);
       }
-      _analytics.log('download_success', format);
+      _analytics.log('download_success', detail);
     } catch (e) {
-      _analytics.log('download_error', format);
+      _analytics.log('download_error', detail);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Could not export ${word ? 'Word' : 'PDF'}: $e')),
@@ -120,6 +123,11 @@ class _BuilderScreenState extends State<BuilderScreen>
     // review and download right away.
     if (enhanced == true && mounted) {
       _tabs.animateTo(1);
+    } else {
+      // Closed without a successful enhancement. Completes the funnel:
+      // enhance_opened -> enhance_started -> enhance_success, so drop-off at
+      // either step is visible rather than just disappearing.
+      _analytics.log('enhance_dismissed');
     }
   }
 
