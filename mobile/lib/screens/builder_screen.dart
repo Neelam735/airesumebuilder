@@ -1,12 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../services/analytics.dart';
 import '../services/api.dart';
 import '../services/billing.dart';
 import '../services/docx_export.dart';
 import '../services/pdf_export.dart';
+import '../services/razorpay_service.dart';
 import '../state/resume_provider.dart';
 import '../theme.dart';
 import '../widgets/enhance_dialog.dart';
@@ -26,6 +28,7 @@ class _BuilderScreenState extends State<BuilderScreen>
   late TabController _tabs;
   late ResumeApi _api;
   late BillingService _billing;
+  late RazorpayService _razorpay;
   late Analytics _analytics;
   bool _exporting = false;
   int _tab = 0;
@@ -44,6 +47,7 @@ class _BuilderScreenState extends State<BuilderScreen>
     });
     _api = ResumeApi();
     _billing = BillingService(_api);
+    _razorpay = RazorpayService(_api);
     _analytics = Analytics(_api);
     _analytics.log('app_open');
     // Best-effort load of the in-app product so the price renders in the
@@ -55,6 +59,7 @@ class _BuilderScreenState extends State<BuilderScreen>
   void dispose() {
     _tabs.dispose();
     _billing.dispose();
+    _razorpay.dispose();
     super.dispose();
   }
 
@@ -76,7 +81,7 @@ class _BuilderScreenState extends State<BuilderScreen>
       final paid = await showDialog<bool>(
         context: context,
         barrierDismissible: false,
-        builder: (_) => PaymentDialog(billing: _billing),
+        builder: (_) => PaymentDialog(billing: _billing, razorpay: _razorpay),
       );
       if (paid != true) {
         _analytics.log('payment_cancelled');
@@ -115,6 +120,35 @@ class _BuilderScreenState extends State<BuilderScreen>
     // review and download right away.
     if (enhanced == true && mounted) {
       _tabs.animateTo(1);
+    }
+  }
+
+  /// Where the published policy pages live. Override at build time with
+  /// --dart-define=DOCS_BASE=https://your-domain/... if you host them yourself.
+  static const _docsBase = String.fromEnvironment(
+    'DOCS_BASE',
+    defaultValue: 'https://neelam735.github.io/airesumebuilder',
+  );
+
+  /// Opens one of the policy pages in the browser. Google Play and payment
+  /// providers both expect these to be reachable from inside the app.
+  Future<void> _openDoc(String page) async {
+    _analytics.log('open_doc', page);
+    try {
+      final ok = await launchUrl(
+        Uri.parse('$_docsBase/$page'),
+        mode: LaunchMode.externalApplication,
+      );
+      if (!ok && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open the page.')),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open the page.')),
+      );
     }
   }
 
@@ -213,6 +247,55 @@ class _BuilderScreenState extends State<BuilderScreen>
                     ),
                   ],
                 ),
+          // Policy pages must be reachable from inside the app for Google Play
+          // and the payment providers.
+          PopupMenuButton<String>(
+            tooltip: 'About & legal',
+            icon: const Icon(Icons.more_vert, color: AppColors.inkMuted),
+            onSelected: _openDoc,
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'pricing.html',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.sell_outlined),
+                  title: Text('Pricing'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'refund-policy.html',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.currency_rupee),
+                  title: Text('Refund policy'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'terms-and-conditions.html',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.gavel_outlined),
+                  title: Text('Terms & conditions'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'privacy-policy.html',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.privacy_tip_outlined),
+                  title: Text('Privacy policy'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'contact-us.html',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.mail_outline),
+                  title: Text('Contact us'),
+                ),
+              ),
+            ],
+          ),
         ],
         bottom: TabBar(
           controller: _tabs,

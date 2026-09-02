@@ -19,6 +19,17 @@ google-play:
   # 32+ random bytes used to HMAC-sign internal payment tokens.
   token-signing-key: ${PAYMENT_TOKEN_SIGNING_KEY:change_me_to_32_random_bytes_or_more}
 
+razorpay:
+  # From Razorpay Dashboard -> Settings -> API Keys. The secret is server-only
+  # and must never be shipped in the app; only the key id reaches the client.
+  key-id: ${RAZORPAY_KEY_ID:}
+  key-secret: ${RAZORPAY_KEY_SECRET:}
+  # Charge for one AI-enhanced download, in paise (2900 = Rs. 29.00).
+  amount: ${RAZORPAY_AMOUNT_PAISE:2900}
+  currency: ${RAZORPAY_CURRENCY:INR}
+  company-name: ${RAZORPAY_COMPANY_NAME:AI Resume Builder}
+  description: ${RAZORPAY_DESCRIPTION:AI-enhanced resume download}
+
 gemini:
   api-key: ${GEMINI_API_KEY:your_gemini_api_key}
   base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}

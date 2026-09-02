@@ -85,6 +85,27 @@ class ResumeApi {
     });
   }
 
+  /// Asks the server to create a Razorpay order. The amount is decided
+  /// server-side, so the client cannot influence the price. Returns the order
+  /// id plus the public key id needed to open Razorpay Checkout.
+  Future<Map<String, dynamic>> createRazorpayOrder() {
+    return _post('/payment/razorpay/order', const {});
+  }
+
+  /// Sends the Razorpay Checkout result to the server, which verifies the
+  /// signature and returns a payment token unlocking the download.
+  Future<Map<String, dynamic>> verifyRazorpayPayment({
+    required String orderId,
+    required String paymentId,
+    required String signature,
+  }) {
+    return _post('/payment/razorpay/verify', {
+      'razorpayOrderId': orderId,
+      'razorpayPaymentId': paymentId,
+      'razorpaySignature': signature,
+    });
+  }
+
   Future<Map<String, dynamic>> parseResume({
     required String paymentToken,
     required String resumeText,
