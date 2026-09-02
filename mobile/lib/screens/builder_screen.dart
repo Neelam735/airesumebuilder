@@ -123,6 +123,11 @@ class _BuilderScreenState extends State<BuilderScreen>
     // review and download right away.
     if (enhanced == true && mounted) {
       _tabs.animateTo(1);
+    } else {
+      // Closed without a successful enhancement. Completes the funnel:
+      // enhance_opened -> enhance_started -> enhance_success, so drop-off at
+      // either step is visible rather than just disappearing.
+      _analytics.log('enhance_dismissed');
     }
   }
 
