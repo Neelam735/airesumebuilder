@@ -4,6 +4,7 @@ import 'package:in_app_review/in_app_review.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../services/analytics.dart';
 import '../services/api.dart';
 import '../services/billing.dart';
 import '../services/docx_export.dart';
@@ -27,6 +28,7 @@ class _BuilderScreenState extends State<BuilderScreen>
   late TabController _tabs;
   late ResumeApi _api;
   late BillingService _billing;
+  late Analytics _analytics;
   bool _exporting = false;
   int _tab = 0;
 
@@ -37,10 +39,15 @@ class _BuilderScreenState extends State<BuilderScreen>
     // Track the active tab so we can hide the Enhance FAB on the Preview tab
     // (where it would otherwise overlap the Download bar).
     _tabs.addListener(() {
-      if (mounted && _tabs.index != _tab) setState(() => _tab = _tabs.index);
+      if (mounted && _tabs.index != _tab) {
+        setState(() => _tab = _tabs.index);
+        _analytics.log('tab_view', _tab == 0 ? 'edit' : 'preview');
+      }
     });
     _api = ResumeApi();
     _billing = BillingService(_api);
+    _analytics = Analytics(_api);
+    _analytics.log('app_open');
     // Best-effort load of the in-app product so the price renders in the
     // payment dialog. Silent if Play Services isn't available (emulator).
     _billing.load();
@@ -58,6 +65,8 @@ class _BuilderScreenState extends State<BuilderScreen>
   /// for yet, then exports as PDF or Word (.docx) via the system share sheet.
   Future<void> _download({bool word = false}) async {
     final provider = context.read<ResumeProvider>();
+    final format = word ? 'word' : 'pdf';
+    _analytics.log('download_tap', format);
     // Skip the Google Play paywall in debug builds — billing doesn't work on
     // debug/local builds anyway, so this lets you test downloads freely.
     // Release builds keep the paywall.
@@ -65,12 +74,17 @@ class _BuilderScreenState extends State<BuilderScreen>
         !kDebugMode && provider.aiEnhanced && !provider.hasPaidForAi;
 
     if (mustPay) {
+      _analytics.log('payment_shown');
       final paid = await showDialog<bool>(
         context: context,
         barrierDismissible: false,
         builder: (_) => PaymentDialog(billing: _billing),
       );
-      if (paid != true) return;
+      if (paid != true) {
+        _analytics.log('payment_cancelled');
+        return;
+      }
+      _analytics.log('payment_success');
     }
 
     setState(() => _exporting = true);
@@ -80,7 +94,9 @@ class _BuilderScreenState extends State<BuilderScreen>
       } else {
         await PdfExport.shareOrSave(provider.data);
       }
+      _analytics.log('download_success', format);
     } catch (e) {
+      _analytics.log('download_error', format);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Could not export ${word ? 'Word' : 'PDF'}: $e')),
@@ -91,10 +107,11 @@ class _BuilderScreenState extends State<BuilderScreen>
   }
 
   Future<void> _enhance() async {
+    _analytics.log('enhance_opened');
     final enhanced = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => EnhanceDialog(api: _api),
+      builder: (_) => EnhanceDialog(api: _api, analytics: _analytics),
     );
     // On a successful enhancement, jump to the Preview tab so the user can
     // review and download right away.
@@ -108,6 +125,7 @@ class _BuilderScreenState extends State<BuilderScreen>
 
   /// Trigger the Play in-app review flow; fall back to opening the store page.
   Future<void> _rateApp() async {
+    _analytics.log('rate_app');
     final review = InAppReview.instance;
     try {
       if (await review.isAvailable()) {
@@ -125,6 +143,7 @@ class _BuilderScreenState extends State<BuilderScreen>
 
   /// Share the app's Play Store link via the system share sheet.
   Future<void> _shareApp() async {
+    _analytics.log('share_app');
     await Share.share(
       'Build and AI-enhance your resume with AI Resume Builder — '
       'download it as PDF or Word:\n$_playUrl',
@@ -152,6 +171,7 @@ class _BuilderScreenState extends State<BuilderScreen>
       ),
     );
     if (ok == true && mounted) {
+      _analytics.log('reset');
       context.read<ResumeProvider>().resetToSample();
     }
   }

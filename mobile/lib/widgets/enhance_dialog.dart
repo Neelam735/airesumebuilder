@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/resume.dart';
+import '../services/analytics.dart';
 import '../services/api.dart';
 import '../services/document_extract.dart';
 import '../state/resume_provider.dart';
@@ -18,8 +19,9 @@ enum _Stage { idle, extracting, improving, filling, done, error }
 /// aiEnhanced flag so the next download is paid.
 class EnhanceDialog extends StatefulWidget {
   final ResumeApi api;
+  final Analytics analytics;
 
-  const EnhanceDialog({super.key, required this.api});
+  const EnhanceDialog({super.key, required this.api, required this.analytics});
 
   @override
   State<EnhanceDialog> createState() => _EnhanceDialogState();
@@ -98,6 +100,9 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
     final path = result.files.single.path;
     if (path == null) return;
 
+    final ext = path.contains('.') ? path.split('.').last.toLowerCase() : '';
+    widget.analytics.log('enhance_started', ext);
+
     setState(() {
       _stage = _Stage.extracting;
       _error = null;
@@ -126,12 +131,15 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
         _progress = 1.0;
       });
       _ticker?.cancel();
+      widget.analytics.log('enhance_success');
       // Briefly show 100% / success, then auto-advance to the Preview tab.
       _autoClose = Timer(const Duration(milliseconds: 1100), () => _close(true));
     } catch (e) {
       _ticker?.cancel();
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      widget.analytics.log('enhance_failed', msg);
       setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
+        _error = msg;
         _stage = _Stage.error;
       });
     }
