@@ -2,23 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/billing.dart';
-import '../services/razorpay_service.dart';
 import '../state/resume_provider.dart';
 import '../theme.dart';
 
 /// Shown when the user taps Download on an AI-enhanced resume that hasn't
-/// been paid for yet. Drives the purchase through either Google Play or
-/// Razorpay, persists the resulting payment token, and resolves with `true`
-/// on success so the caller can proceed to share/download the PDF.
+/// been paid for yet. Drives the Google Play purchase, persists the
+/// resulting payment token, and resolves with `true` on success so the
+/// caller can proceed to share/download the PDF.
 class PaymentDialog extends StatefulWidget {
   final BillingService billing;
-  final RazorpayService razorpay;
 
-  const PaymentDialog({
-    super.key,
-    required this.billing,
-    required this.razorpay,
-  });
+  const PaymentDialog({super.key, required this.billing});
 
   @override
   State<PaymentDialog> createState() => _PaymentDialogState();
@@ -38,17 +32,6 @@ class _PaymentDialogState extends State<PaymentDialog> {
     );
   }
 
-  Future<void> _purchaseRazorpay() async {
-    await _run(
-      'Opening Razorpay…',
-      () => widget.razorpay.payAndVerify(
-        onStatus: (s) => setState(() => _status = s),
-      ),
-    );
-  }
-
-  /// Shared plumbing for both providers: both resolve with a server-issued
-  /// payment token, so success handling is identical.
   Future<void> _run(String initialStatus, Future<String> Function() pay) async {
     setState(() {
       _busy = true;
@@ -127,7 +110,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
                           Text('AI-enhanced PDF download',
                               style: TextStyle(
                                   fontSize: 14, fontWeight: FontWeight.w600)),
-                          Text('One-time fee · Google Play or UPI/Card',
+                          Text('One-time fee, billed by Google Play',
                               style: TextStyle(
                                   color: AppColors.inkMuted, fontSize: 11)),
                         ],
@@ -164,18 +147,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                     : 'Pay with Google Play'),
               ),
               const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: _busy ? null : _purchaseRazorpay,
-                icon: const Icon(Icons.account_balance_wallet_outlined, size: 18),
-                label: const Text('Pay with UPI / Card (Razorpay)'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-              const SizedBox(height: 8),
               const Text(
-                'Secure billing via Google Play or Razorpay. After payment your '
-                'download starts automatically.',
+                'Secure billing via Google Play. After payment your download '
+                'starts automatically.',
                 style: TextStyle(color: AppColors.inkMuted, fontSize: 11),
               ),
             ],
