@@ -20,6 +20,12 @@ class DocumentExtract {
   /// Extensions we advertise to the file picker.
   static const List<String> allowedExtensions = ['pdf', 'docx', 'doc'];
 
+  /// Extensions offered in the file picker. Legacy .doc is deliberately absent:
+  /// it is not an OpenXML/ZIP file and extraction rejects it, so listing it
+  /// would only let people select a file guaranteed to fail. A mis-labelled
+  /// file still works, because extraction sniffs the magic bytes.
+  static const List<String> pickerExtensions = ['pdf', 'docx'];
+
   /// Reads [file], picks an extractor by extension, and returns clean text.
   /// Throws with a user-friendly message on unsupported/empty input.
   static Future<String> fromFile(File file) async {
