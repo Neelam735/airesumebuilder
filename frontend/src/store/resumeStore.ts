@@ -91,7 +91,11 @@ export const useResumeStore = create<ResumeState>()(
         set((state) => ({ ui: { ...state.ui, template } })),
       setAccent: (accent) => set((state) => ({ ui: { ...state.ui, accent } })),
       setZoom: (zoom) => set((state) => ({ ui: { ...state.ui, zoom } })),
-      markAiEnhanced: () => set({ aiEnhanced: true }),
+      // A payment unlocks the enhanced resume it was made for. Enhancing again
+      // produces a different resume, so the previous unlock is cleared and the
+      // new one has to be paid for; without this, one payment would have made
+      // every later enhancement free.
+      markAiEnhanced: () => set({ aiEnhanced: true, paymentToken: null }),
       setPaymentToken: (paymentToken) => set({ paymentToken }),
       reset: () =>
         set({
