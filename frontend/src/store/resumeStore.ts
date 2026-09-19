@@ -60,12 +60,19 @@ const defaultUI: UISettings = {
 interface ResumeState {
   resume: ResumeData;
   ui: UISettings;
+  /** True once the resume has been rewritten by AI. Enhancement itself is
+   *  free; this is what makes the next download a paid one. */
+  aiEnhanced: boolean;
+  /** Server-issued token proving the download was paid for. */
+  paymentToken: string | null;
   setResume: (data: ResumeData) => void;
   patchResume: (patch: Partial<ResumeData>) => void;
   setUI: (patch: Partial<UISettings>) => void;
   setTemplate: (t: TemplateId) => void;
   setAccent: (c: string) => void;
   setZoom: (z: number) => void;
+  markAiEnhanced: () => void;
+  setPaymentToken: (token: string | null) => void;
   reset: () => void;
 }
 
@@ -74,6 +81,8 @@ export const useResumeStore = create<ResumeState>()(
     (set) => ({
       resume: defaultResume,
       ui: defaultUI,
+      aiEnhanced: false,
+      paymentToken: null,
       setResume: (data) => set({ resume: data }),
       patchResume: (patch) =>
         set((state) => ({ resume: { ...state.resume, ...patch } })),
@@ -82,7 +91,15 @@ export const useResumeStore = create<ResumeState>()(
         set((state) => ({ ui: { ...state.ui, template } })),
       setAccent: (accent) => set((state) => ({ ui: { ...state.ui, accent } })),
       setZoom: (zoom) => set((state) => ({ ui: { ...state.ui, zoom } })),
-      reset: () => set({ resume: defaultResume, ui: defaultUI }),
+      markAiEnhanced: () => set({ aiEnhanced: true }),
+      setPaymentToken: (paymentToken) => set({ paymentToken }),
+      reset: () =>
+        set({
+          resume: defaultResume,
+          ui: defaultUI,
+          aiEnhanced: false,
+          paymentToken: null,
+        }),
     }),
     { name: 'rb.resume' },
   ),

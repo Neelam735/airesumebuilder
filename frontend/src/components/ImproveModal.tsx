@@ -2,7 +2,6 @@ import { useRef, useState } from 'react';
 import { api } from '../utils/api';
 import { mergeAiResume } from '../utils/applyAiResume';
 import { extractTextFromPdf } from '../utils/pdfExtract';
-import { payWithRazorpay } from '../utils/razorpay';
 import { useResumeStore } from '../store/resumeStore';
 
 interface Props {
@@ -10,11 +9,12 @@ interface Props {
   onClose: () => void;
 }
 
-type Stage = 'idle' | 'extracting' | 'paying' | 'improving' | 'done' | 'error';
+type Stage = 'idle' | 'extracting' | 'improving' | 'done' | 'error';
 
 export default function ImproveModal({ open, onClose }: Props) {
   const resume = useResumeStore((s) => s.resume);
   const setResume = useResumeStore((s) => s.setResume);
+  const markAiEnhanced = useResumeStore((s) => s.markAiEnhanced);
 
   const [stage, setStage] = useState<Stage>('idle');
   const [status, setStatus] = useState('');
@@ -25,7 +25,7 @@ export default function ImproveModal({ open, onClose }: Props) {
 
   if (!open) return null;
 
-  const busy = stage === 'extracting' || stage === 'paying' || stage === 'improving';
+  const busy = stage === 'extracting' || stage === 'improving';
 
   const reset = () => {
     setStage('idle');
@@ -76,14 +76,13 @@ export default function ImproveModal({ open, onClose }: Props) {
     }
     setError(null);
     try {
-      setStage('paying');
-      const paymentToken = await payWithRazorpay(setStatus);
-
       setStage('improving');
       setStatus('Rewriting your resume with AI…');
-      const result = await api.parseResume(paymentToken, resumeText);
+      // Enhancement is free; payment is collected at download time instead.
+      const result = await api.parseResume('', resumeText);
 
       setResume(mergeAiResume(resume, result.resume));
+      markAiEnhanced();
       setStage('done');
       setStatus('');
     } catch (err) {
@@ -114,10 +113,11 @@ export default function ImproveModal({ open, onClose }: Props) {
           <>
             <p className="text-sm text-ink-muted">
               Your resume has been rewritten and loaded into the editor. Review
-              the wording, then export it as a PDF.
+              the wording, then download it as a PDF — that's when the one-time
+              ₹29 applies.
             </p>
             <div className="mt-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-[13px] text-emerald-400">
-              Payment successful — AI rewrite applied.
+              AI rewrite applied.
             </div>
             <button type="button" onClick={close} className="btn-primary w-full mt-4">
               Review my resume
@@ -127,9 +127,9 @@ export default function ImproveModal({ open, onClose }: Props) {
           <>
             <p className="text-sm text-ink-muted">
               Upload your existing resume and let AI rewrite it in stronger,
-              more professional language. One-time&nbsp;
-              <span className="text-brand font-semibold">₹29</span> — pay
-              securely by UPI, card or net banking.
+              more professional language.{' '}
+              <span className="text-brand font-semibold">Enhancing is free</span>
+              {' '}— you only pay ₹29 when you download the result.
             </p>
 
             {/* Step 1 — source */}
@@ -187,7 +187,7 @@ export default function ImproveModal({ open, onClose }: Props) {
               disabled={busy || !resumeText.trim()}
               className="btn-primary w-full mt-4 disabled:opacity-50"
             >
-              {busy ? status || 'Processing…' : 'Pay ₹29 & improve with AI'}
+              {busy ? status || 'Processing…' : '✨ Improve with AI — free'}
             </button>
 
             <p className="mt-3 text-[11px] text-ink-muted">
