@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../utils/api';
 import { mergeAiResume } from '../utils/applyAiResume';
 import { extractTextFromPdf } from '../utils/pdfExtract';
@@ -21,7 +21,18 @@ export default function ImproveModal({ open, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [resumeText, setResumeText] = useState('');
+  const [progress, setProgress] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const stageTarget = stage === 'extracting' ? 0.25 : stage === 'improving' ? 0.9 : 0;
+
+  useEffect(() => {
+    if (stage !== 'extracting' && stage !== 'improving') return;
+    const id = setInterval(() => {
+      setProgress((p) => Math.min(p + (stageTarget - p) * 0.08, 0.985));
+    }, 100);
+    return () => clearInterval(id);
+  }, [stage, stageTarget]);
 
   if (!open) return null;
 
@@ -33,6 +44,7 @@ export default function ImproveModal({ open, onClose }: Props) {
     setError(null);
     setFileName(null);
     setResumeText('');
+    setProgress(0);
   };
 
   const close = () => {
@@ -46,6 +58,7 @@ export default function ImproveModal({ open, onClose }: Props) {
     if (!file) return;
     setError(null);
     setFileName(file.name);
+    setProgress(0.02);
     setStage('extracting');
     setStatus('Reading your PDF…');
     try {
@@ -76,6 +89,7 @@ export default function ImproveModal({ open, onClose }: Props) {
     }
     setError(null);
     try {
+      setProgress((p) => Math.max(p, 0.28));
       setStage('improving');
       setStatus('Rewriting your resume with AI…');
       // Enhancement is free; payment is collected at download time instead.
@@ -83,6 +97,7 @@ export default function ImproveModal({ open, onClose }: Props) {
 
       setResume(mergeAiResume(resume, result.resume));
       markAiEnhanced();
+      setProgress(1);
       setStage('done');
       setStatus('');
     } catch (err) {
@@ -174,9 +189,21 @@ export default function ImproveModal({ open, onClose }: Props) {
             )}
 
             {busy && (
-              <div className="mt-3 flex items-center gap-2 text-[12px] text-ink-muted">
-                <span className="inline-block w-3 h-3 rounded-full border-2 border-brand border-t-transparent animate-spin" />
-                {status || 'Working…'}
+              <div className="mt-3">
+                <div className="h-2 w-full rounded-full bg-brand/15 overflow-hidden">
+                  <div
+                    className="h-full bg-brand transition-[width] duration-150 ease-out"
+                    style={{ width: `${Math.round(progress * 100)}%` }}
+                  />
+                </div>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-[12px] font-medium text-ink">
+                    {status || 'Working…'}
+                  </span>
+                  <span className="text-[13px] font-bold text-brand">
+                    {Math.round(progress * 100)}%
+                  </span>
+                </div>
               </div>
             )}
 
