@@ -172,7 +172,7 @@ service account:
 1. Play Console → Monetize → **Products → In-app products** → Create product.
 2. **Product ID:** `ai_resume_improvement` (must match exactly — it is
    case-sensitive and cannot be reused once created).
-3. Set a name, description, and price (e.g. ₹29). **Activate** it.
+3. Set a name, description, and price (e.g. ₹9). **Activate** it.
 4. Wait for it to show **Active**. New products can take a few hours to
    propagate to devices.
 

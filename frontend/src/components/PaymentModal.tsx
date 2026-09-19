@@ -73,7 +73,7 @@ export default function PaymentModal({ open, onClose, onPaid }: Props) {
               One-time payment · UPI, card or net banking
             </div>
           </div>
-          <div className="text-2xl font-bold text-brand">₹29</div>
+          <div className="text-2xl font-bold text-brand">₹9</div>
         </div>
 
         {error && (
@@ -95,7 +95,7 @@ export default function PaymentModal({ open, onClose, onPaid }: Props) {
           disabled={busy}
           className="btn-primary w-full mt-4 disabled:opacity-50"
         >
-          {busy ? status || 'Processing…' : 'Pay ₹29 & download'}
+          {busy ? status || 'Processing…' : 'Pay ₹9 & download'}
         </button>
 
         <button

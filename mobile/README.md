@@ -126,7 +126,7 @@ flutter run --dart-define=API_BASE=https://your-backend.example.com/api/v1
 1. **In Play Console → Monetize → Products → In-app products**:
    - Product ID: `ai_resume_improvement`
    - Type: **Consumable**
-   - Price: ₹29 (or whatever you want)
+   - Price: ₹9 (or whatever you want)
    - Status: Active
 
 2. **Add license testers** (Play Console → Setup → License testing) so

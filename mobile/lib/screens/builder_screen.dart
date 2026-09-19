@@ -409,7 +409,7 @@ class _BuilderScreenState extends State<BuilderScreen>
               busy: _exporting,
               aiEnhanced: provider.aiEnhanced,
               paid: provider.hasPaidForAi,
-              price: _billing.product?.price ?? '₹29',
+              price: _billing.product?.price ?? '₹9',
               onDownloadPdf: _exporting ? null : () => _download(word: false),
               onDownloadWord: _exporting ? null : () => _download(word: true),
             ),
