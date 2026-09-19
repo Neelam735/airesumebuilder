@@ -12,8 +12,22 @@ server {
     server_tokens off;
 
     gzip on;
-    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+    # text/javascript covers .mjs (see the location below); without it the
+    # 1.3 MB pdf.js worker would be sent uncompressed.
+    gzip_types text/plain text/css application/javascript text/javascript application/json image/svg+xml;
     gzip_min_length 1024;
+
+    # nginx's bundled mime.types has no entry for .mjs, so an ES module would
+    # be served as application/octet-stream and the browser refuses to execute
+    # it ("Failed to fetch dynamically imported module"). pdf.js ships its
+    # worker as .mjs, so PDF text extraction breaks without this. A regex
+    # location wins over the /assets/ prefix below, so repeat the caching here.
+    location ~* \.mjs$ {
+        default_type text/javascript;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
 
     # Vite emits content-hashed filenames, so these are safe to cache hard.
     location /assets/ {
