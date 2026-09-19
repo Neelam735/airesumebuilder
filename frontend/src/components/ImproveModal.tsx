@@ -129,7 +129,7 @@ export default function ImproveModal({ open, onClose }: Props) {
             <p className="text-sm text-ink-muted">
               Your resume has been rewritten and loaded into the editor. Review
               the wording, then download it as a PDF — that's when the one-time
-              ₹9 applies.
+              ₹10 applies.
             </p>
             <div className="mt-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-[13px] text-emerald-400">
               AI rewrite applied.
@@ -144,7 +144,7 @@ export default function ImproveModal({ open, onClose }: Props) {
               Upload your existing resume and let AI rewrite it in stronger,
               more professional language.{' '}
               <span className="text-brand font-semibold">Enhancing is free</span>
-              {' '}— you only pay ₹9 when you download the result.
+              {' '}— you only pay ₹10 when you download the result.
             </p>
 
             {/* Step 1 — source */}
