@@ -22,7 +22,7 @@ In Railway → your service → **Variables**:
 |---|---|---|---|
 | `RAZORPAY_KEY_ID` | yes | — | e.g. `rzp_test_abc123` |
 | `RAZORPAY_KEY_SECRET` | yes | — | server-only secret |
-| `RAZORPAY_AMOUNT_PAISE` | no | `1000` | charge in paise (1000 = ₹10.00). Razorpay rejects amounts below its minimum. |
+| `RAZORPAY_AMOUNT_PAISE` | no | `1900` | charge in paise (1900 = ₹19.00). Razorpay rejects amounts below its minimum (₹10). |
 | `RAZORPAY_CURRENCY` | no | `INR` | |
 | `RAZORPAY_COMPANY_NAME` | no | `AI Resume Builder` | shown on the checkout sheet |
 | `RAZORPAY_DESCRIPTION` | no | `AI-enhanced resume download` | shown on the checkout sheet |
@@ -34,7 +34,7 @@ At startup the log line confirms what was picked up (the secret is only ever
 reported as present, never printed):
 
 ```
-Razorpay config: keyId=rzp_test_abc123 secret=<provided> amount=1000 INR
+Razorpay config: keyId=rzp_test_abc123 secret=<provided> amount=1900 INR
 ```
 
 ## 3. Endpoints
@@ -47,7 +47,7 @@ Returns the order plus the public key id:
 ```json
 {
   "orderId": "order_XXXXXXXX",
-  "amount": 1000,
+  "amount": 1900,
   "currency": "INR",
   "keyId": "rzp_test_abc123",
   "companyName": "AI Resume Builder",

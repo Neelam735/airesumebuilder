@@ -24,9 +24,9 @@ razorpay:
   # and must never be shipped in the app; only the key id reaches the client.
   key-id: ${RAZORPAY_KEY_ID:}
   key-secret: ${RAZORPAY_KEY_SECRET:}
-  # Charge for one AI-enhanced download, in paise (1000 = Rs. 10.00).
+  # Charge for one AI-enhanced download, in paise (1900 = Rs. 19.00).
   # Razorpay rejects orders below its minimum, so keep this at 1000 or more.
-  amount: ${RAZORPAY_AMOUNT_PAISE:1000}
+  amount: ${RAZORPAY_AMOUNT_PAISE:1900}
   currency: ${RAZORPAY_CURRENCY:INR}
   company-name: ${RAZORPAY_COMPANY_NAME:AI Resume Builder}
   description: ${RAZORPAY_DESCRIPTION:AI-enhanced resume download}

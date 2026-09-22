@@ -30,7 +30,7 @@ export default function SiteFooter() {
         </nav>
         <p className="text-[11px] text-ink-muted">
           © {new Date().getFullYear()} AI Resume Builder · Building and AI
-          enhancement are free; downloading an AI-enhanced resume costs ₹10 once.
+          enhancement are free; downloading an AI-enhanced resume costs ₹19 once.
         </p>
       </div>
     </footer>

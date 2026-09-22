@@ -54,7 +54,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final price = widget.billing.product?.price ?? '₹10';
+    final price = widget.billing.product?.price ?? '₹19';
     return Dialog(
       backgroundColor: AppColors.card,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

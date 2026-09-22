@@ -1,7 +1,7 @@
 # AI Resume Builder
 
 A production-ready resume builder with three templates, live preview, PDF export, and an
-AI-powered "Import & Improve Resume" flow gated behind a ₹10 Google Play in-app purchase
+AI-powered "Import & Improve Resume" flow gated behind a ₹19 Google Play in-app purchase
 (in the Android app) and a smart-apply flow that ranks remote jobs by skill overlap.
 
 - **Web frontend** — Vite + React 18 + TypeScript + Tailwind + Zustand
@@ -176,7 +176,7 @@ Jobs are sourced from [Remotive's public API](https://remotive.com/api-documenta
 `POST /api/v1/jobs/cover-letter` produces a 200-word, three-paragraph cover letter
 via Gemini using the candidate's name/title/summary/skills and the target
 job's title/company/description. This endpoint is **not** payment-gated —
-the ₹10 fee covers the AI resume rewrite only.
+the ₹19 fee covers the AI resume rewrite only.
 
 > ⚠️ **Important:** "Apply with AI" is a smart-assist flow, not a bot. Truly
 > hands-off applying on LinkedIn / Indeed violates platform ToS. The frontend
