@@ -65,6 +65,9 @@ interface ResumeState {
   aiEnhanced: boolean;
   /** Server-issued token proving the download was paid for. */
   paymentToken: string | null;
+  /** Points the user at the Download button right after an enhancement, so
+   *  the next step is obvious instead of the dialog just closing. */
+  downloadHint: boolean;
   setResume: (data: ResumeData) => void;
   patchResume: (patch: Partial<ResumeData>) => void;
   setUI: (patch: Partial<UISettings>) => void;
@@ -72,6 +75,7 @@ interface ResumeState {
   setAccent: (c: string) => void;
   setZoom: (z: number) => void;
   markAiEnhanced: () => void;
+  dismissDownloadHint: () => void;
   setPaymentToken: (token: string | null) => void;
   reset: () => void;
 }
@@ -83,6 +87,7 @@ export const useResumeStore = create<ResumeState>()(
       ui: defaultUI,
       aiEnhanced: false,
       paymentToken: null,
+      downloadHint: false,
       setResume: (data) => set({ resume: data }),
       patchResume: (patch) =>
         set((state) => ({ resume: { ...state.resume, ...patch } })),
@@ -95,7 +100,9 @@ export const useResumeStore = create<ResumeState>()(
       // produces a different resume, so the previous unlock is cleared and the
       // new one has to be paid for; without this, one payment would have made
       // every later enhancement free.
-      markAiEnhanced: () => set({ aiEnhanced: true, paymentToken: null }),
+      markAiEnhanced: () =>
+        set({ aiEnhanced: true, paymentToken: null, downloadHint: true }),
+      dismissDownloadHint: () => set({ downloadHint: false }),
       setPaymentToken: (paymentToken) => set({ paymentToken }),
       reset: () =>
         set({
@@ -103,6 +110,7 @@ export const useResumeStore = create<ResumeState>()(
           ui: defaultUI,
           aiEnhanced: false,
           paymentToken: null,
+          downloadHint: false,
         }),
     }),
     { name: 'rb.resume' },
