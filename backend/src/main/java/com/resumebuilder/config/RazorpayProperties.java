@@ -19,7 +19,7 @@ public class RazorpayProperties {
     private String keySecret;
 
     /** Amount charged for one AI-enhanced download, in the currency's smallest unit (paise). */
-    private int amount = 2900;
+    private int amount = 1900;
 
     /** ISO currency code for the charge. */
     private String currency = "INR";

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -33,11 +34,13 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
   double _progress = 0; // 0..1 shown as a percentage while enhancing
   Timer? _ticker;
   Timer? _autoClose;
+  final TextEditingController _pasted = TextEditingController();
 
   @override
   void dispose() {
     _ticker?.cancel();
     _autoClose?.cancel();
+    _pasted.dispose();
     super.dispose();
   }
 
@@ -92,17 +95,44 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
   Future<void> _pickAndProcess() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: DocumentExtract.allowedExtensions,
+      allowedExtensions: DocumentExtract.pickerExtensions,
       allowMultiple: false,
-      withData: false,
+      // Also load the bytes. A file chosen from Google Drive, Gmail or another
+      // cloud provider has no local path, and without the bytes the pick used
+      // to fail silently — the user tapped their resume and nothing happened.
+      withData: true,
     );
-    if (result == null || result.files.isEmpty) return;
-    final path = result.files.single.path;
-    if (path == null) return;
+    if (result == null || result.files.isEmpty) {
+      // Backed out of the picker: often "my resume isn't on this phone".
+      widget.analytics.log('enhance_picker_cancelled');
+      return;
+    }
 
-    final ext = path.contains('.') ? path.split('.').last.toLowerCase() : '';
-    widget.analytics.log('enhance_started', ext);
+    final picked = result.files.single;
+    final ext = picked.name.contains('.')
+        ? picked.name.split('.').last.toLowerCase()
+        : '';
 
+    Uint8List? bytes = picked.bytes;
+    if (bytes == null && picked.path != null) {
+      try {
+        bytes = await File(picked.path!).readAsBytes();
+      } catch (_) {
+        // Fall through to the unreadable branch below.
+      }
+    }
+    if (bytes == null || bytes.isEmpty) {
+      widget.analytics.log('enhance_pick_unreadable', ext);
+      setState(() {
+        _error = 'That file could not be read. If it is stored in Google Drive '
+            'or Gmail, download it to your phone first — or paste your resume '
+            'text instead.';
+        _stage = _Stage.error;
+      });
+      return;
+    }
+
+    widget.analytics.log('enhance_started', ext.isEmpty ? 'file' : ext);
     setState(() {
       _stage = _Stage.extracting;
       _error = null;
@@ -110,39 +140,79 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
     });
     _startTicker();
     try {
-      final text = await DocumentExtract.fromFile(File(path));
-      setState(() => _stage = _Stage.improving);
-
-      final response = await widget.api.parseResume(
-        paymentToken: '',
-        resumeText: text,
+      final text = await DocumentExtract.fromBytes(
+        bytes,
+        extension: ext.isEmpty ? null : ext,
       );
-      final improved = (response['resume'] as Map<String, dynamic>?) ?? {};
-
-      setState(() => _stage = _Stage.filling);
-      if (!mounted) return;
-      final provider = context.read<ResumeProvider>();
-      final next = _mergeAi(provider.data, improved);
-      provider.replaceAll(next);
-      provider.markAiEnhanced();
-
-      setState(() {
-        _stage = _Stage.done;
-        _progress = 1.0;
-      });
-      _ticker?.cancel();
-      widget.analytics.log('enhance_success');
-      // Briefly show 100% / success, then auto-advance to the Preview tab.
-      _autoClose = Timer(const Duration(milliseconds: 1100), () => _close(true));
+      await _improve(text);
     } catch (e) {
-      _ticker?.cancel();
-      final msg = e.toString().replaceFirst('Exception: ', '');
-      widget.analytics.log('enhance_failed', msg);
+      _fail(e);
+    }
+  }
+
+  /// Enhance resume text the user pasted, so someone whose resume isn't on
+  /// their phone can still use the feature.
+  Future<void> _processPastedText() async {
+    final text = _pasted.text.trim();
+    if (text.length < 40) {
       setState(() {
-        _error = msg;
+        _error = 'Please paste a bit more of your resume so the AI has '
+            'something to work with.';
         _stage = _Stage.error;
       });
+      return;
     }
+    widget.analytics.log('enhance_started', 'pasted');
+    setState(() {
+      _stage = _Stage.extracting;
+      _error = null;
+      _progress = 0.02;
+    });
+    _startTicker();
+    try {
+      await _improve(text);
+    } catch (e) {
+      _fail(e);
+    }
+  }
+
+  /// Shared tail of both flows: send the text for AI rewriting and merge the
+  /// result back into the form.
+  Future<void> _improve(String text) async {
+    if (!mounted) return;
+    setState(() => _stage = _Stage.improving);
+
+    final response = await widget.api.parseResume(
+      paymentToken: '',
+      resumeText: text,
+    );
+    final improved = (response['resume'] as Map<String, dynamic>?) ?? {};
+
+    if (!mounted) return;
+    setState(() => _stage = _Stage.filling);
+    final provider = context.read<ResumeProvider>();
+    provider.replaceAll(_mergeAi(provider.data, improved));
+    provider.markAiEnhanced();
+
+    setState(() {
+      _stage = _Stage.done;
+      _progress = 1.0;
+    });
+    _ticker?.cancel();
+    widget.analytics.log('enhance_success');
+    // Briefly show 100% / success, then auto-advance to the Preview tab.
+    _autoClose = Timer(const Duration(milliseconds: 1100), () => _close(true));
+  }
+
+  void _fail(Object e) {
+    _ticker?.cancel();
+    final msg = e.toString().replaceFirst('Exception: ', '');
+    widget.analytics.log('enhance_failed', msg);
+    if (!mounted) return;
+    setState(() {
+      _error = msg;
+      _stage = _Stage.error;
+    });
   }
 
   ResumeData _mergeAi(ResumeData current, Map<String, dynamic> ai) {
@@ -198,9 +268,11 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
     return Dialog(
       backgroundColor: AppColors.card,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      // Scrollable: the paste field brings up the keyboard, which can leave
+      // less height than the dialog needs on smaller phones.
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 420),
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -228,9 +300,10 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
               ),
               const SizedBox(height: 4),
               const Text(
-                'Upload your existing PDF or Word (.docx) resume and let AI rewrite it '
-                'using strong, professional language. '
-                'Enhancement is free — payment is only required when you download.',
+                'Upload your PDF or Word (.docx) resume — or just paste your '
+                'resume text — and let AI rewrite it using strong, professional '
+                'language. Enhancement is free; payment is only required when '
+                'you download.',
                 style: TextStyle(color: AppColors.inkMuted, fontSize: 12),
               ),
               const SizedBox(height: 16),
@@ -289,27 +362,78 @@ class _EnhanceDialogState extends State<EnhanceDialog> {
   }
 
   Widget _uploadCta() {
-    return InkWell(
-      onTap: _pickAndProcess,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 28),
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.border, width: 2),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          onTap: _pickAndProcess,
           borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            decoration: BoxDecoration(
+              border: Border.all(color: AppColors.border, width: 2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Column(
+              children: [
+                Icon(Icons.upload_file, size: 30, color: AppColors.brand),
+                SizedBox(height: 6),
+                Text('Tap to choose a PDF or Word file',
+                    style: TextStyle(fontWeight: FontWeight.w500)),
+                SizedBox(height: 2),
+                Text('PDF or .docx — standard resumes work best',
+                    style: TextStyle(color: AppColors.inkMuted, fontSize: 11)),
+              ],
+            ),
+          ),
         ),
-        child: const Column(
-          children: [
-            Icon(Icons.upload_file, size: 32, color: AppColors.brand),
-            SizedBox(height: 6),
-            Text('Tap to choose a PDF or Word file',
-                style: TextStyle(fontWeight: FontWeight.w500)),
-            SizedBox(height: 2),
-            Text('PDF or .docx — standard resumes work best',
-                style: TextStyle(color: AppColors.inkMuted, fontSize: 11)),
-          ],
+
+        // Not everyone keeps a resume file on their phone. Pasting text lets
+        // them use the feature straight from LinkedIn, an email or a note.
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 10),
+          child: Row(children: [
+            Expanded(child: Divider(color: AppColors.border)),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Text('or paste your resume',
+                  style: TextStyle(color: AppColors.inkMuted, fontSize: 11)),
+            ),
+            Expanded(child: Divider(color: AppColors.border)),
+          ]),
         ),
-      ),
+
+        TextField(
+          controller: _pasted,
+          maxLines: 5,
+          minLines: 4,
+          textCapitalization: TextCapitalization.sentences,
+          onChanged: (_) => setState(() {}), // enables/disables the button
+          decoration: InputDecoration(
+            hintText: 'Paste your resume text here — from LinkedIn, an email, '
+                'or anywhere else.',
+            hintStyle:
+                const TextStyle(color: AppColors.inkMuted, fontSize: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            contentPadding: const EdgeInsets.all(12),
+          ),
+          style: const TextStyle(fontSize: 13),
+        ),
+        const SizedBox(height: 10),
+        ElevatedButton.icon(
+          onPressed:
+              _pasted.text.trim().isEmpty ? null : _processPastedText,
+          icon: const Icon(Icons.auto_awesome, size: 18),
+          label: const Text('Improve pasted text'),
+        ),
+      ],
     );
   }
 

@@ -9,20 +9,35 @@ import LanguagesForm from '../components/LanguagesForm';
 import ResumePreview from '../components/ResumePreview';
 import CustomizationPanel from '../components/CustomizationPanel';
 import ImproveModal from '../components/ImproveModal';
+import PaymentModal from '../components/PaymentModal';
+import SiteFooter from '../components/SiteFooter';
 import JobMatches from '../components/JobMatches';
 import { useResumeStore } from '../store/resumeStore';
 import { exportElementAsPdf } from '../utils/pdfExport';
 
 export default function BuilderPage() {
   const [improveOpen, setImproveOpen] = useState(false);
+  const [payOpen, setPayOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const reset = useResumeStore((s) => s.reset);
   const resume = useResumeStore((s) => s.resume);
   const setZoom = useResumeStore((s) => s.setZoom);
   const ui = useResumeStore((s) => s.ui);
+  const aiEnhanced = useResumeStore((s) => s.aiEnhanced);
+  const paymentToken = useResumeStore((s) => s.paymentToken);
 
+  /** Download entry point. An AI-enhanced resume must be paid for once;
+   *  a resume the user wrote themselves downloads free. */
   const handleDownload = async () => {
+    if (aiEnhanced && !paymentToken) {
+      setPayOpen(true);
+      return;
+    }
+    await runExport();
+  };
+
+  const runExport = async () => {
     if (!previewRef.current) return;
     setExporting(true);
     const prevZoom = ui.zoom;
@@ -78,7 +93,19 @@ export default function BuilderPage() {
         </div>
       </main>
 
+      <SiteFooter />
+
       <ImproveModal open={improveOpen} onClose={() => setImproveOpen(false)} />
+
+      <PaymentModal
+        open={payOpen}
+        onClose={() => setPayOpen(false)}
+        onPaid={() => {
+          setPayOpen(false);
+          // Payment verified — start the download the user originally asked for.
+          void runExport();
+        }}
+      />
     </div>
   );
 }

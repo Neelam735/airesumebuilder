@@ -1,8 +1,7 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../utils/api';
 import { mergeAiResume } from '../utils/applyAiResume';
 import { extractTextFromPdf } from '../utils/pdfExtract';
-import { payWithRazorpay } from '../utils/razorpay';
 import { useResumeStore } from '../store/resumeStore';
 
 interface Props {
@@ -10,22 +9,34 @@ interface Props {
   onClose: () => void;
 }
 
-type Stage = 'idle' | 'extracting' | 'paying' | 'improving' | 'done' | 'error';
+type Stage = 'idle' | 'extracting' | 'improving' | 'done' | 'error';
 
 export default function ImproveModal({ open, onClose }: Props) {
   const resume = useResumeStore((s) => s.resume);
   const setResume = useResumeStore((s) => s.setResume);
+  const markAiEnhanced = useResumeStore((s) => s.markAiEnhanced);
 
   const [stage, setStage] = useState<Stage>('idle');
   const [status, setStatus] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [resumeText, setResumeText] = useState('');
+  const [progress, setProgress] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const stageTarget = stage === 'extracting' ? 0.25 : stage === 'improving' ? 0.9 : 0;
+
+  useEffect(() => {
+    if (stage !== 'extracting' && stage !== 'improving') return;
+    const id = setInterval(() => {
+      setProgress((p) => Math.min(p + (stageTarget - p) * 0.08, 0.985));
+    }, 100);
+    return () => clearInterval(id);
+  }, [stage, stageTarget]);
 
   if (!open) return null;
 
-  const busy = stage === 'extracting' || stage === 'paying' || stage === 'improving';
+  const busy = stage === 'extracting' || stage === 'improving';
 
   const reset = () => {
     setStage('idle');
@@ -33,6 +44,7 @@ export default function ImproveModal({ open, onClose }: Props) {
     setError(null);
     setFileName(null);
     setResumeText('');
+    setProgress(0);
   };
 
   const close = () => {
@@ -46,6 +58,7 @@ export default function ImproveModal({ open, onClose }: Props) {
     if (!file) return;
     setError(null);
     setFileName(file.name);
+    setProgress(0.02);
     setStage('extracting');
     setStatus('Reading your PDF…');
     try {
@@ -76,14 +89,15 @@ export default function ImproveModal({ open, onClose }: Props) {
     }
     setError(null);
     try {
-      setStage('paying');
-      const paymentToken = await payWithRazorpay(setStatus);
-
+      setProgress((p) => Math.max(p, 0.28));
       setStage('improving');
       setStatus('Rewriting your resume with AI…');
-      const result = await api.parseResume(paymentToken, resumeText);
+      // Enhancement is free; payment is collected at download time instead.
+      const result = await api.parseResume('', resumeText);
 
       setResume(mergeAiResume(resume, result.resume));
+      markAiEnhanced();
+      setProgress(1);
       setStage('done');
       setStatus('');
     } catch (err) {
@@ -114,10 +128,11 @@ export default function ImproveModal({ open, onClose }: Props) {
           <>
             <p className="text-sm text-ink-muted">
               Your resume has been rewritten and loaded into the editor. Review
-              the wording, then export it as a PDF.
+              the wording, then download it as a PDF — that's when the one-time
+              ₹19 applies.
             </p>
             <div className="mt-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-[13px] text-emerald-400">
-              Payment successful — AI rewrite applied.
+              AI rewrite applied.
             </div>
             <button type="button" onClick={close} className="btn-primary w-full mt-4">
               Review my resume
@@ -127,9 +142,9 @@ export default function ImproveModal({ open, onClose }: Props) {
           <>
             <p className="text-sm text-ink-muted">
               Upload your existing resume and let AI rewrite it in stronger,
-              more professional language. One-time&nbsp;
-              <span className="text-brand font-semibold">₹29</span> — pay
-              securely by UPI, card or net banking.
+              more professional language.{' '}
+              <span className="text-brand font-semibold">Enhancing is free</span>
+              {' '}— you only pay ₹19 when you download the result.
             </p>
 
             {/* Step 1 — source */}
@@ -174,9 +189,21 @@ export default function ImproveModal({ open, onClose }: Props) {
             )}
 
             {busy && (
-              <div className="mt-3 flex items-center gap-2 text-[12px] text-ink-muted">
-                <span className="inline-block w-3 h-3 rounded-full border-2 border-brand border-t-transparent animate-spin" />
-                {status || 'Working…'}
+              <div className="mt-3">
+                <div className="h-2 w-full rounded-full bg-brand/15 overflow-hidden">
+                  <div
+                    className="h-full bg-brand transition-[width] duration-150 ease-out"
+                    style={{ width: `${Math.round(progress * 100)}%` }}
+                  />
+                </div>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-[12px] font-medium text-ink">
+                    {status || 'Working…'}
+                  </span>
+                  <span className="text-[13px] font-bold text-brand">
+                    {Math.round(progress * 100)}%
+                  </span>
+                </div>
               </div>
             )}
 
@@ -187,7 +214,7 @@ export default function ImproveModal({ open, onClose }: Props) {
               disabled={busy || !resumeText.trim()}
               className="btn-primary w-full mt-4 disabled:opacity-50"
             >
-              {busy ? status || 'Processing…' : 'Pay ₹29 & improve with AI'}
+              {busy ? status || 'Processing…' : '✨ Improve with AI — free'}
             </button>
 
             <p className="mt-3 text-[11px] text-ink-muted">

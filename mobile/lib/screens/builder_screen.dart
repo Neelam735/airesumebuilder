@@ -8,7 +8,6 @@ import '../services/api.dart';
 import '../services/billing.dart';
 import '../services/docx_export.dart';
 import '../services/pdf_export.dart';
-import '../services/razorpay_service.dart';
 import '../state/resume_provider.dart';
 import '../theme.dart';
 import '../widgets/enhance_dialog.dart';
@@ -28,7 +27,6 @@ class _BuilderScreenState extends State<BuilderScreen>
   late TabController _tabs;
   late ResumeApi _api;
   late BillingService _billing;
-  late RazorpayService _razorpay;
   late Analytics _analytics;
   bool _exporting = false;
   int _tab = 0;
@@ -37,8 +35,7 @@ class _BuilderScreenState extends State<BuilderScreen>
   void initState() {
     super.initState();
     _tabs = TabController(length: 2, vsync: this);
-    // Track the active tab so we can hide the Enhance FAB on the Preview tab
-    // (where it would otherwise overlap the Download bar).
+    // Track the active tab so the custom tab row can render the selected one.
     _tabs.addListener(() {
       if (mounted && _tabs.index != _tab) {
         setState(() => _tab = _tabs.index);
@@ -47,7 +44,6 @@ class _BuilderScreenState extends State<BuilderScreen>
     });
     _api = ResumeApi();
     _billing = BillingService(_api);
-    _razorpay = RazorpayService(_api);
     _analytics = Analytics(_api);
     _analytics.log('app_open');
     // Best-effort load of the in-app product so the price renders in the
@@ -59,7 +55,6 @@ class _BuilderScreenState extends State<BuilderScreen>
   void dispose() {
     _tabs.dispose();
     _billing.dispose();
-    _razorpay.dispose();
     super.dispose();
   }
 
@@ -84,7 +79,7 @@ class _BuilderScreenState extends State<BuilderScreen>
       final paid = await showDialog<bool>(
         context: context,
         barrierDismissible: false,
-        builder: (_) => PaymentDialog(billing: _billing, razorpay: _razorpay),
+        builder: (_) => PaymentDialog(billing: _billing),
       );
       if (paid != true) {
         _analytics.log('payment_cancelled');
@@ -112,8 +107,10 @@ class _BuilderScreenState extends State<BuilderScreen>
     }
   }
 
-  Future<void> _enhance() async {
-    _analytics.log('enhance_opened');
+  /// [source] records which control was tapped, so the logs show which entry
+  /// point people use if more are added later.
+  Future<void> _enhance({String source = 'center'}) async {
+    _analytics.log('enhance_tapped', source);
     final enhanced = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -125,7 +122,7 @@ class _BuilderScreenState extends State<BuilderScreen>
       _tabs.animateTo(1);
     } else {
       // Closed without a successful enhancement. Completes the funnel:
-      // enhance_opened -> enhance_started -> enhance_success, so drop-off at
+      // enhance_tapped -> enhance_started -> enhance_success, so drop-off at
       // either step is visible rather than just disappearing.
       _analytics.log('enhance_dismissed');
     }
@@ -305,34 +302,80 @@ class _BuilderScreenState extends State<BuilderScreen>
             ],
           ),
         ],
-        bottom: TabBar(
-          controller: _tabs,
-          labelColor: AppColors.brand,
-          unselectedLabelColor: AppColors.inkMuted,
-          indicatorColor: AppColors.brand,
-          tabs: const [
-            Tab(icon: Icon(Icons.edit_note, size: 20), text: 'Edit'),
-            Tab(icon: Icon(Icons.preview, size: 20), text: 'Preview'),
-          ],
+        // Custom tab row so Enhance sits between Edit and Preview. It replaces
+        // the floating button, which was only on the Edit tab and could cover
+        // content; here it is central and visible from either tab.
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(72),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+            child: Row(
+              children: [
+                Expanded(child: _tabButton(Icons.edit_note, 'Edit', 0)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: ElevatedButton.icon(
+                    onPressed: () => _enhance(source: 'center'),
+                    icon: const Icon(Icons.auto_awesome, size: 18),
+                    label: const Text('Enhance with AI'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.brand,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24)),
+                    ),
+                  ),
+                ),
+                Expanded(child: _tabButton(Icons.preview, 'Preview', 1)),
+              ],
+            ),
+          ),
         ),
       ),
-      // Hide the Enhance FAB on the Preview tab so it never covers the
-      // Download bar. Enhance stays available from the Edit tab.
-      floatingActionButton: _tab == 0
-          ? FloatingActionButton.extended(
-              onPressed: _enhance,
-              icon: const Icon(Icons.auto_awesome),
-              label: const Text('Enhance Resume using AI'),
-              backgroundColor: AppColors.brand,
-              foregroundColor: Colors.white,
-            )
-          : null,
       body: TabBarView(
         controller: _tabs,
         children: [
           _editTab(),
           _previewTab(provider),
         ],
+      ),
+    );
+  }
+
+  /// One side of the custom tab row. Reproduces TabBar's selected styling
+  /// (brand colour plus an underline) since the Enhance button sits between
+  /// the two tabs and a plain TabBar can't host a widget in the middle.
+  Widget _tabButton(IconData icon, String label, int index) {
+    final selected = _tab == index;
+    final color = selected ? AppColors.brand : AppColors.inkMuted;
+    return InkWell(
+      onTap: () => _tabs.animateTo(index),
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 20, color: color),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: color,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Container(
+              height: 2,
+              width: 28,
+              color: selected ? AppColors.brand : Colors.transparent,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -348,7 +391,7 @@ class _BuilderScreenState extends State<BuilderScreen>
         EducationForm(),
         ProjectsForm(),
         LanguagesForm(),
-        SizedBox(height: 80), // breathing room for FAB
+        SizedBox(height: 24),
       ],
     );
   }
@@ -366,7 +409,7 @@ class _BuilderScreenState extends State<BuilderScreen>
               busy: _exporting,
               aiEnhanced: provider.aiEnhanced,
               paid: provider.hasPaidForAi,
-              price: _billing.product?.price ?? '₹29',
+              price: _billing.product?.price ?? '₹19',
               onDownloadPdf: _exporting ? null : () => _download(word: false),
               onDownloadWord: _exporting ? null : () => _download(word: true),
             ),

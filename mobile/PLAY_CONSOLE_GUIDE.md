@@ -200,7 +200,7 @@ On the app **Dashboard**, work through the "Set up your app" checklist:
 1. Console → **Monetize → Products → In‑app products** → **Create product**.
 2. **Product ID:** `ai_resume_improvement` — must match exactly
    (case‑sensitive, cannot be reused once created).
-3. Add a name + description, **set price** (e.g. ₹29) for your countries.
+3. Add a name + description, **set price** (e.g. ₹19) for your countries.
 4. Click **Activate** — it must show status **Active**.
 
 > If "Create product" is greyed out, upload a build to a track first (Section G),

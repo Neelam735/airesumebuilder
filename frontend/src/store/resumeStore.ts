@@ -60,12 +60,27 @@ const defaultUI: UISettings = {
 interface ResumeState {
   resume: ResumeData;
   ui: UISettings;
+  /** True once the resume has been rewritten by AI. Enhancement itself is
+   *  free; this is what makes the next download a paid one. */
+  aiEnhanced: boolean;
+  /** Server-issued token proving the download was paid for. */
+  paymentToken: string | null;
+  /** Step 1 pointer, at the Import & Improve button. Shown until the user
+   *  starts an enhancement or dismisses it. */
+  improveHint: boolean;
+  /** Step 2 pointer, at the Download button right after an enhancement, so
+   *  the next step is obvious instead of the dialog just closing. */
+  downloadHint: boolean;
   setResume: (data: ResumeData) => void;
   patchResume: (patch: Partial<ResumeData>) => void;
   setUI: (patch: Partial<UISettings>) => void;
   setTemplate: (t: TemplateId) => void;
   setAccent: (c: string) => void;
   setZoom: (z: number) => void;
+  markAiEnhanced: () => void;
+  dismissImproveHint: () => void;
+  dismissDownloadHint: () => void;
+  setPaymentToken: (token: string | null) => void;
   reset: () => void;
 }
 
@@ -74,6 +89,10 @@ export const useResumeStore = create<ResumeState>()(
     (set) => ({
       resume: defaultResume,
       ui: defaultUI,
+      aiEnhanced: false,
+      paymentToken: null,
+      improveHint: true,
+      downloadHint: false,
       setResume: (data) => set({ resume: data }),
       patchResume: (patch) =>
         set((state) => ({ resume: { ...state.resume, ...patch } })),
@@ -82,7 +101,30 @@ export const useResumeStore = create<ResumeState>()(
         set((state) => ({ ui: { ...state.ui, template } })),
       setAccent: (accent) => set((state) => ({ ui: { ...state.ui, accent } })),
       setZoom: (zoom) => set((state) => ({ ui: { ...state.ui, zoom } })),
-      reset: () => set({ resume: defaultResume, ui: defaultUI }),
+      // A payment unlocks the enhanced resume it was made for. Enhancing again
+      // produces a different resume, so the previous unlock is cleared and the
+      // new one has to be paid for; without this, one payment would have made
+      // every later enhancement free.
+      markAiEnhanced: () =>
+        set({
+          aiEnhanced: true,
+          paymentToken: null,
+          // Step 1 is done; move the pointer to Download.
+          improveHint: false,
+          downloadHint: true,
+        }),
+      dismissImproveHint: () => set({ improveHint: false }),
+      dismissDownloadHint: () => set({ downloadHint: false }),
+      setPaymentToken: (paymentToken) => set({ paymentToken }),
+      reset: () =>
+        set({
+          resume: defaultResume,
+          ui: defaultUI,
+          aiEnhanced: false,
+          paymentToken: null,
+          improveHint: true,
+          downloadHint: false,
+        }),
     }),
     { name: 'rb.resume' },
   ),
