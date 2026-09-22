@@ -65,7 +65,10 @@ interface ResumeState {
   aiEnhanced: boolean;
   /** Server-issued token proving the download was paid for. */
   paymentToken: string | null;
-  /** Points the user at the Download button right after an enhancement, so
+  /** Step 1 pointer, at the Import & Improve button. Shown until the user
+   *  starts an enhancement or dismisses it. */
+  improveHint: boolean;
+  /** Step 2 pointer, at the Download button right after an enhancement, so
    *  the next step is obvious instead of the dialog just closing. */
   downloadHint: boolean;
   setResume: (data: ResumeData) => void;
@@ -75,6 +78,7 @@ interface ResumeState {
   setAccent: (c: string) => void;
   setZoom: (z: number) => void;
   markAiEnhanced: () => void;
+  dismissImproveHint: () => void;
   dismissDownloadHint: () => void;
   setPaymentToken: (token: string | null) => void;
   reset: () => void;
@@ -87,6 +91,7 @@ export const useResumeStore = create<ResumeState>()(
       ui: defaultUI,
       aiEnhanced: false,
       paymentToken: null,
+      improveHint: true,
       downloadHint: false,
       setResume: (data) => set({ resume: data }),
       patchResume: (patch) =>
@@ -101,7 +106,14 @@ export const useResumeStore = create<ResumeState>()(
       // new one has to be paid for; without this, one payment would have made
       // every later enhancement free.
       markAiEnhanced: () =>
-        set({ aiEnhanced: true, paymentToken: null, downloadHint: true }),
+        set({
+          aiEnhanced: true,
+          paymentToken: null,
+          // Step 1 is done; move the pointer to Download.
+          improveHint: false,
+          downloadHint: true,
+        }),
+      dismissImproveHint: () => set({ improveHint: false }),
       dismissDownloadHint: () => set({ downloadHint: false }),
       setPaymentToken: (paymentToken) => set({ paymentToken }),
       reset: () =>
@@ -110,6 +122,7 @@ export const useResumeStore = create<ResumeState>()(
           ui: defaultUI,
           aiEnhanced: false,
           paymentToken: null,
+          improveHint: true,
           downloadHint: false,
         }),
     }),
