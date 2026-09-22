@@ -22,3 +22,6 @@ Thumbs.db
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+# Generated marketing asset bundles (regenerable, delivered directly)
+*-ads.zip
